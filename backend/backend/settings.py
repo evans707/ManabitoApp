@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'scraping.apps.ScrapingConfig',
     'accounts.apps.AccountsConfig',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
