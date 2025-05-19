@@ -1,0 +1,5 @@
+# vscode設定ファイル
+.vscode/
+
+# python仮想環境
+backend/venv/
