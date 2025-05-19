@@ -1,2 +1,5 @@
 # vscode設定ファイル
 .vscode/
+
+# 仮想環境
+venv/
