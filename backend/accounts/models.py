@@ -5,4 +5,4 @@ class User(models.Model):
     university_id = models.CharField(max_length=10, unique=True)
 
     def __str__(self):
-        return self.username
+        return self.university_id
