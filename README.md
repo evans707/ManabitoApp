@@ -1,9 +1,14 @@
-## 1. 機能を追加する場合
-機能を追加するときはブランチを新しく作成してから実装してください. 例えば, スクレイピングのシステムを新しく実装したい場合はScrapingSystem(仮)という名前のブランチを作成し, 実装してください.
-作成したブランチが完全に作り終えたと思ったら, GitHubからPull requestsをしてください. グループの人たちでバグが起きないか確認してからmainブランチにマージします.\
-参考: Githubでチーム開発するためのマニュアル(https://qiita.com/siida36/items/880d92559af9bd245c34)
+## 1. 環境構築
+### 使用言語
+html, css, JavaScript, python
 
-## 2. コミットメッセージをわかりやすく書こう!
-例) [add] スクレイピング機能を追加しました
-    [fix] 〇〇の不具合を修正しました\
-参考: Gitのコミットメッセージの書き方(https://qiita.com/itosho/items/9565c6ad2ffc24c09364)
+### Django
+1. Python 3.12.3をインストール\
+2. 下記のコマンドを実行し, 仮想環境を作成\
+   ``python -m venv venv``
+3. requirements.txtからpythonライブラリをインストール\
+   ``pip install -r requirements.txt``
+4. gitを使用してクローンし, djangoプロジェクトが実行できるか確認
+
+## 2. ドキュメント
+･[Notionドキュメント](https://www.notion.so/Manabito-1fbd0b749bfd80d69943d859f6870257?pvs=4)
