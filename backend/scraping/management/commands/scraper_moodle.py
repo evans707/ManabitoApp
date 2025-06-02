@@ -4,6 +4,8 @@ import time
 import logging
 from datetime import datetime
 from dotenv import load_dotenv
+from django.core.management.base import BaseCommand
+from django.utils.timezone import make_aware
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -11,6 +13,84 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import (
     TimeoutException, StaleElementReferenceException, ElementNotInteractableException
 )
+
+# Djangoのモデルとプロジェクト設定をインポート
+from scraping.models import Assignment
+from accounts.models import User
+
+# .envファイルをロード
+load_dotenv()
+
+# ロガーの設定
+logger = logging.getLogger(__name__)
+
+class Command(BaseCommand):
+    help = 'Moodleから課題をスクレイピングし、データベースに保存する'
+
+    def add_arguments(self, parser):
+        parser.add_argument('moodle_username', type=str, help='Moodleのユーザー名')
+
+    def handle(self, *args, **options):
+        # コマンドライン引数からユーザー名を取得
+        moodle_username = options['moodle_username']
+
+        # Djangoのユーザーを取得
+        try:
+            user = User.objects.get(username=moodle_username)
+        except User.DoesNotExist:
+            logger.warning(f'存在しないDjangoユーザー "{moodle_username}" でコマンドが実行されました。')
+            self.stdout.write(self.style.ERROR(f'Djangoユーザー "{moodle_username}" が見つかりません。'))
+            return
+
+        # 環境変数からMoodleのパスワードとURLを取得
+        moodle_password = os.getenv('MOODLE_PASSWORD')
+        moodle_url = os.getenv('MOODLE_URL')
+
+        if not all([moodle_password, moodle_url]):
+            logger.error('.envファイルに MOODLE_PASSWORD と MOODLE_URL が設定されていません。')
+            self.stdout.write(self.style.ERROR('.envファイルに MOODLE_PASSWORD と MOODLE_URL を設定してください。'))
+            return
+
+        self.stdout.write(f'ユーザー "{moodle_username}" の課題をMoodleから取得します...')
+
+        try:
+            with MoodleScraper(moodle_username, moodle_password, moodle_url, logger) as scraper:
+                scraper.login()
+                assignments_data = scraper.scrape_all_assignments()
+
+                if not assignments_data:
+                    logger.info(f'ユーザー "{moodle_username}" の課題をスクレイピングしましたが、取得結果は0件でした。')
+                    self.stdout.write(self.style.WARNING('取得できた課題はありませんでした。'))
+                    return
+
+                # 取得した課題をデータベースに保存
+                saved_count = 0
+                updated_count = 0
+                for item in assignments_data:
+                    # タイムゾーン情報を持たないdatetimeオブジェクトを、Djangoが利用できるawareなオブジェクトに変換
+                    due_date_aware = None
+                    if item['due_date']:
+                        due_date_aware = make_aware(item['due_date'])
+                    
+                    # update_or_createでデータの登録・更新を自動化
+                    obj, created = Assignment.objects.update_or_create(
+                        user=user,
+                        title=item['title'],
+                        defaults={
+                            'description': item['url'], # descriptionにURLを保存
+                            'due_date': due_date_aware,
+                        }
+                    )
+                    if created:
+                        saved_count += 1
+                    else:
+                        updated_count += 1
+
+                self.stdout.write(self.style.SUCCESS(f'処理完了: {saved_count}件の新しい課題を保存し、{updated_count}件の課題を更新しました。'))
+
+        except Exception as e:
+            logger.error(f"スクレイピング中にエラーが発生しました: {e}", exc_info=True)
+            self.stdout.write(self.style.ERROR('スクリプトの実行中にエラーが発生しました。詳細はログを確認してください。'))
 
 class MoodleScraper:
     """
@@ -21,12 +101,13 @@ class MoodleScraper:
         scraper.login()
         assignments = scraper.scrape_all_assignments()
     """
-    def __init__(self, username, password, moodle_url, headless=True):
+    def __init__(self, username, password, moodle_url, logger, headless=True):
         self.username = username
         self.password = password
         self.moodle_url = moodle_url
         self.login_url = self.moodle_url # 通常は同じURL
         self.my_courses_url = self.moodle_url.replace('/login/index.php', '/my/courses.php')
+        self.logger = logger
 
         # ブラウザ設定
         options = webdriver.ChromeOptions()
@@ -36,25 +117,25 @@ class MoodleScraper:
         self.wait_long = WebDriverWait(self.driver, 10)
         self.wait_short = WebDriverWait(self.driver, 3)
 
-        logging.info("MoodleScraperが初期化されました。")
+        self.logger.info("MoodleScraperが初期化されました。")
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.driver.quit()
-        logging.info("ブラウザを終了しました。")
+        self.logger.info("ブラウザを終了しました。")
 
     def login(self):
         # Moodleにログイン
-        logging.info(f"{self.login_url} にアクセスしてログインします...")
+        self.logger.info(f"{self.login_url} にアクセスしてログインします...")
         self.driver.get(self.login_url)
 
         try:
             username_field = self.wait_long.until(EC.element_to_be_clickable((By.ID, 'username')))
             username_field.send_keys(self.username)
         except TimeoutException:
-            logging.error("ログインページの読み込みに時間がかかりすぎています")
+            self.logger.error("ログインページの読み込みに時間がかかりすぎています")
             raise
 
         for i in range(3):
@@ -63,13 +144,13 @@ class MoodleScraper:
                 password_field.send_keys(self.password)
                 break
             except (StaleElementReferenceException, ElementNotInteractableException) as e:
-                logging.warning(f"試行 {i+1}/3: パスワードフィールドの操作に失敗 ({e.__class__.__name__})。再試行します。")
+                self.logger.warning(f"試行 {i+1}/3: パスワードフィールドの操作に失敗 ({e.__class__.__name__})。再試行します。")
                 time.sleep(0.5)
             except TimeoutException:
-                logging.error("パスワードフィールドが見つからないかクリック可能になりませんでした。")
+                self.logger.error("パスワードフィールドが見つからないかクリック可能になりませんでした。")
                 raise
         else:
-            logging.error("パスワードフィールドの操作に5回失敗しました。")
+            self.logger.error("パスワードフィールドの操作に5回失敗しました。")
             raise
 
         login_button = self.wait_long.until(EC.element_to_be_clickable((By.ID, 'loginbtn')))
@@ -77,9 +158,9 @@ class MoodleScraper:
 
         try:
             self.wait_long.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".usermenu")))
-            logging.info("ログインに成功しました。")
+            self.logger.info("ログインに成功しました。")
         except TimeoutException:
-            logging.error("ログインに失敗しました。ID/Passwordが間違っているか、ログインに時間がかかりすぎています。")
+            self.logger.error("ログインに失敗しました。ID/Passwordが間違っているか、ログインに時間がかかりすぎています。")
             raise
 
     def scrape_all_assignments(self):
@@ -92,7 +173,7 @@ class MoodleScraper:
 
     def _get_courses(self):
         # マイコースページから授業の一覧を取得
-        logging.info("マイコースページに遷移して授業一覧を取得します...")
+        self.logger.info("マイコースページに遷移して授業一覧を取得します...")
         self.driver.get(self.my_courses_url)
         courses = []
         try:
@@ -105,15 +186,15 @@ class MoodleScraper:
                     if course_url:
                         courses.append((course_name, course_url))
                 except Exception as e:
-                    logging.warning(f"授業タイトルの取得に失敗しました: {e} (URL: {course_url})")
+                    self.logger.warning(f"授業タイトルの取得に失敗しました: {e} (URL: {course_url})")
         except TimeoutException:
-            logging.error("登録されている授業がないか、マイコースページに遷移できませんでした。")
+            self.logger.error("登録されている授業がないか、マイコースページに遷移できませんでした。")
             raise
         return courses
 
     def _scrape_assignments_from_course(self, course_name, course_url):
         # 特定の授業ページから課題をスクレイピング
-        logging.info(f"授業「{course_name}」の処理を開始します (URL: {course_url})")
+        self.logger.info(f"授業「{course_name}」の処理を開始します (URL: {course_url})")
         self.driver.get(course_url)
         course_assignments = []
         try:
@@ -124,23 +205,23 @@ class MoodleScraper:
             elif "tabs-tree-start" == element.get_attribute("id"):
                 course_assignments = self._scrape_tab_page((course_name, course_url))
             else:
-                logging.warning(f"授業「{course_name}」は予期しないページ形式です。")
+                self.logger.warning(f"授業「{course_name}」は予期しないページ形式です。")
         except TimeoutException:
-            logging.error(f"授業「{course_name}」のページ形式を判断できませんでした (タイムアウト)。")
+            self.logger.error(f"授業「{course_name}」のページ形式を判断できませんでした (タイムアウト)。")
         return course_assignments
 
     def _scrape_topic_week_page(self, course):
         # topic/week形式の授業ページの処理
-        logging.info("topic/week形式のページを処理します。")
+        self.logger.info("topic/week形式のページを処理します。")
         try:
             return self._process_assign_on_current_page()
         except TimeoutException:
-            logging.warning(f"授業「{course[0]}」では課題が見つかりませんでした (タイムアウト)。")
+            self.logger.warning(f"授業「{course[0]}」では課題が見つかりませんでした (タイムアウト)。")
             return []
 
     def _scrape_tab_page(self, course):
         # tab形式の授業ページの処理
-        logging.info("tab形式のページを処理します。")
+        self.logger.info("tab形式のページを処理します。")
         assignments = []
         try:
             elements = self.wait_short.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.tabs-wrapper a.nav-link")))
@@ -148,13 +229,13 @@ class MoodleScraper:
             
             for tab_title, tab_url in tabs:
                 self.driver.get(tab_url)
-                logging.info(f"タブ「{tab_title}」を処理中...")
+                self.logger.info(f"タブ「{tab_title}」を処理中...")
                 try:
                     assignments.extend(self._process_assign_on_current_page())
                 except TimeoutException:
-                    logging.warning(f"授業「{course[0]}」のタブ「{tab_title}」では課題が見つかりませんでした (タイムアウト)。")
+                    self.logger.warning(f"授業「{course[0]}」のタブ「{tab_title}」では課題が見つかりませんでした (タイムアウト)。")
         except TimeoutException:
-            logging.error(f"授業「{course[0]}」のタブが見つかりませんでした。")
+            self.logger.error(f"授業「{course[0]}」のタブが見つかりませんでした。")
         return assignments
 
     def _process_assign_on_current_page(self):
@@ -180,14 +261,14 @@ class MoodleScraper:
             info_div = self.wait_short.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.activity-information")))
             title = info_div.get_attribute("data-activityname")
         except TimeoutException:
-            logging.warning(f"URL: {assign_url} で課題タイトルが見つかりませんでした (タイムアウト)。")
+            self.logger.warning(f"URL: {assign_url} で課題タイトルが見つかりませんでした (タイムアウト)。")
         try:
             date_div = self.wait_short.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.activity-dates")))
             date = self._parse_start_end_datetimes(date_div.text)
         except TimeoutException:
-            logging.warning(f"URL: {assign_url} で課題期日が見つかりませんでした (タイムアウト)。")
+            self.logger.warning(f"URL: {assign_url} で課題期日が見つかりませんでした (タイムアウト)。")
 
-        logging.info(f"課題取得: {title}, URL: {assign_url}, 期日: {date}")
+        self.logger.info(f"課題取得: {title}, URL: {assign_url}, 期日: {date}")
         return {'title': title, 'url': assign_url, 'due_date': date}
     
     @staticmethod
@@ -199,37 +280,3 @@ class MoodleScraper:
         if len(datetimes) == 2: return datetimes[1]
         if len(datetimes) == 1: return datetimes[0]
         return None
-
-def main():
-    # 環境変数のロード
-    load_dotenv()
-    # ログの設定
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-    # 環境変数の読み込み
-    USERNAME = os.getenv('MOODLE_USERNAME')
-    PASSWORD = os.getenv('MOODLE_PASSWORD')
-    MOODLE_URL = os.getenv('MOODLE_URL')
-
-    if not all([USERNAME, PASSWORD, MOODLE_URL]):
-        logging.error("エラー: .envファイルに MOODLE_USERNAME, MOODLE_PASSWORD, MOODLE_URL を設定してください。")
-        return
-
-    try:
-        with MoodleScraper(USERNAME, PASSWORD, MOODLE_URL) as scraper:
-            scraper.login()
-            all_assignments = scraper.scrape_all_assignments()
-            
-            if all_assignments:
-                logging.info(f"合計 {len(all_assignments)} 件の課題を取得しました。")
-                # Djangoプロジェクトでは、ここで取得したデータをDBに保存する処理を記述
-                print(all_assignments)
-            else:
-                logging.info("取得できた課題はありませんでした。")
-
-    except Exception as e:
-        logging.error(f"スクリプトの実行中に予期せぬエラーが発生しました: {e}", exc_info=True)
-
-# スクリプトが直接実行された場合にmain()を呼び出す
-if __name__ == "__main__":
-    main()
