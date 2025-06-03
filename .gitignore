@@ -7,6 +7,9 @@ venv/
 # pyenv
 backend/**/__pycache__/
 
+# 環境変数ファイル（検証するための学籍番号、パスワードなど）
+.env
+
 # db.sqlite3
 backend/db.sqlite3
 
