@@ -1,7 +1,7 @@
 // src/views/Home.vue
 <template>
   <div class="home-page">
-    <h2>ダッシュボード</h2> {/* */}
+    <h2>ホーム</h2> {/* */}
     <p>ここにホームページの主要なコンテンツ（例：直近の課題概要、通知など）が表示されます。</p>
     
     <section class="quick-look-assignments">
