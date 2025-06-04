@@ -1,16 +1,41 @@
 from django.db import models
-from accounts.models import User
+from accounts.models import User 
 
+class Course(models.Model):
+    # 曜日の選択肢を定義
+    DAY_OF_WEEK_CHOICES = [
+        (1, '月曜日'),
+        (2, '火曜日'),
+        (3, '水曜日'),
+        (4, '木曜日'),
+        (5, '金曜日'),
+        (6, '土曜日'),
+        (7, '日曜日'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses')
+    title = models.CharField(max_length=255, verbose_name='授業タイトル')
+    day_of_week = models.IntegerField(choices=DAY_OF_WEEK_CHOICES, verbose_name='曜日', null=True, blank=True)
+    period = models.PositiveSmallIntegerField(verbose_name='時限', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
+
+    def __str__(self):
+        return self.title
 
 class Assignment(models.Model):
-    title = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True, help_text="課題ページのURLなどを保存") # URLを保存するために利用
-    due_date = models.DateTimeField(null=True, blank=True) # 日付が取得できない場合も考慮
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assignments')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='assignments', null=True, blank=True)
+    title = models.CharField(max_length=255, verbose_name='課題タイトル')
+    content = models.TextField(verbose_name='課題詳細', blank=True, null=True)
+    url = models.URLField(max_length=512, verbose_name='課題URL', unique=True)
+    due_date = models.DateTimeField(verbose_name='提出期限', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
 
     class Meta:
-        # userとtitleの組み合わせで同じ課題の重複登録を防ぐ
-        unique_together = ('user', 'title')
+        unique_together = ('user', 'url')
+        ordering = ['due_date']
 
     def __str__(self):
         return self.title
