@@ -46,7 +46,8 @@ class Command(BaseCommand):
 
         try:
             with MoodleScraper(moodle_username, moodle_password, moodle_url, logger) as scraper:
-                scraper.login()
+                if not scraper.login():
+                    raise ConnectionError("Moodleへのログインに失敗しました。ユーザー名またはパスワードが間違っている可能性があります。")
                 assignments_data = scraper.scrape_all_assignments()
 
                 if not assignments_data:
@@ -67,7 +68,7 @@ class Command(BaseCommand):
                         user=user,
                         title=item['title'],
                         defaults={
-                            'url': item['url'], # descriptionにURLを保存
+                            'url': item['url'],
                             'due_date': due_date_aware,
                         }
                     )
