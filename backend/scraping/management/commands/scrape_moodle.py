@@ -3,7 +3,7 @@ import logging
 from dotenv import load_dotenv
 from django.core.management.base import BaseCommand
 from django.utils.timezone import make_aware
-from scraper_moodle import MoodleScraper
+from scraping.scraper_moodle import MoodleScraper
 
 # Djangoのモデルとプロジェクト設定をインポート
 from scraping.models import Assignment
@@ -58,17 +58,16 @@ class Command(BaseCommand):
                 saved_count = 0
                 updated_count = 0
                 for item in assignments_data:
-                    # タイムゾーン情報を持たないdatetimeオブジェクトを、Djangoが利用できるawareなオブジェクトに変換
                     due_date_aware = None
                     if item['due_date']:
-                        due_date_aware = make_aware(item['due_date'])
+                        due_date_aware = item['due_date']
                     
                     # update_or_createでデータの登録・更新を自動化
                     obj, created = Assignment.objects.update_or_create(
                         user=user,
                         title=item['title'],
                         defaults={
-                            'description': item['url'], # descriptionにURLを保存
+                            'url': item['url'], # descriptionにURLを保存
                             'due_date': due_date_aware,
                         }
                     )
