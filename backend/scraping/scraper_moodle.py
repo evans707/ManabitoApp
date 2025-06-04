@@ -2,6 +2,7 @@ import re
 import time
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -36,7 +37,7 @@ class MoodleScraper:
             options.add_argument('--headless')
         self.driver = webdriver.Chrome(options=options)
         self.wait_long = WebDriverWait(self.driver, 10)
-        self.wait_short = WebDriverWait(self.driver, 3)
+        self.wait_short = WebDriverWait(self.driver, 1)
 
         self.logger.info("MoodleScraperが初期化されました。")
 
@@ -98,6 +99,7 @@ class MoodleScraper:
 
     def scrape_all_assignments(self):
         # 登録されている全ての授業から課題をスクレイピング
+        # 辞書(課題情報)のリストを返す
         courses = self._get_courses()
         all_assignments = []
         for course_name, course_url in courses:
@@ -106,6 +108,7 @@ class MoodleScraper:
 
     def _get_courses(self):
         # マイコースページから授業の一覧を取得
+        # タプル(course_name, course_url)のリストを返す
         self.logger.info(f"マイコースページ ({self.my_courses_url}) に遷移して授業一覧を取得します...")
         self.driver.get(self.my_courses_url)
         courses = []
@@ -129,7 +132,8 @@ class MoodleScraper:
         return courses
 
     def _scrape_assignments_from_course(self, course_name, course_url):
-        # 特定の授業ページから課題をスクレイピング
+        # 授業ページから課題をスクレイピング
+        # 授業ページの課題情報(辞書)すべてをリストで返す
         self.logger.info(f"授業「{course_name}」の処理を開始します (URL: {course_url})")
         self.driver.get(course_url)
         course_assignments = []
@@ -150,7 +154,7 @@ class MoodleScraper:
         # topic/week形式の授業ページの処理
         self.logger.info(f"授業「{course[0]}」: topic/week形式のページを処理します。")
         try:
-            return self._process_assign_on_current_page()
+            return self._process_assign_on_current_page(course[0])
         except TimeoutException:
             self.logger.warning(f"授業「{course[0]}」では課題が見つかりませんでした (タイムアウト)。")
             return []
@@ -162,20 +166,20 @@ class MoodleScraper:
         try:
             elements = self.wait_short.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.tabs-wrapper a.nav-link")))
             tabs_info = [(el.get_attribute("title"), el.get_attribute("href")) for el in elements if el.get_attribute("href")]
-            self.logger.info(f"{len(tabs_info)}個のタブが見つかりました: {tabs_info}")
+            self.logger.info(f"{len(tabs_info)}個のタブが見つかりました。")
             
             for tab_title, tab_url in tabs_info:
                 self.driver.get(tab_url)
                 self.logger.info(f"タブ「{tab_title}」を処理中...")
                 try:
-                    assignments.extend(self._process_assign_on_current_page())
+                    assignments.extend(self._process_assign_on_current_page(course[0]))
                 except TimeoutException:
                     self.logger.warning(f"授業「{course[0]}」のタブ「{tab_title}」では課題が見つかりませんでした (タイムアウト)。")
         except TimeoutException:
             self.logger.error(f"授業「{course[0]}」のタブが見つかりませんでした(タイムアウト)。")
         return assignments
 
-    def _process_assign_on_current_page(self):
+    def _process_assign_on_current_page(self, course_name):
         # 現在のページの課題を処理
         assignments = []
         try:
@@ -183,15 +187,16 @@ class MoodleScraper:
             assign_links = [el.get_attribute("href") for el in elements]
             
             for assign_url in assign_links:
-                assignment_data = self._scrape_assign_details(assign_url)
+                assignment_data = self._scrape_assign_details(assign_url, course_name)
                 if assignment_data:
                     assignments.append(assignment_data)
             return assignments
         except TimeoutException:
             return []
 
-    def _scrape_assign_details(self, assign_url):
+    def _scrape_assign_details(self, assign_url, course_name):
         # 課題の詳細をスクレイピング
+        # 課題情報を辞書で返す
         self.driver.get(assign_url)
         title, date = None, None
         try:
@@ -205,15 +210,53 @@ class MoodleScraper:
         except TimeoutException:
             self.logger.warning(f"URL: {assign_url} で課題期日が見つかりませんでした (タイムアウト)。")
 
-        self.logger.info(f"課題取得: {title}, URL: {assign_url}, 期日: {date}")
-        return {'title': title, 'url': assign_url, 'due_date': date}
+        start_date = None
+        due_date = None
+        if date:
+            start_date = date[0]
+            due_date = date[1]
+
+        self.logger.info(f"課題取得: {title}, URL: {assign_url}, 期日: {due_date}")
+        return {'title': title, 'url': assign_url, 'course': course_name, 'start_date': start_date, 'due_date': due_date}
     
     @staticmethod
-    def _parse_start_end_datetimes(text):
-        # テキストから（終了）日時を抽出してdatatime型を返す
+    def _parse_start_end_datetimes(text, tz_str="Asia/Tokyo"):
+        """
+        テキストから開始日時と終了日時を抽出し、タイムゾーン情報を持つdatetimeオブジェクトのタプルとして返す
+        return (start_datetime, end_datetime) のタプル
+        見つからない日時は None になる
+        """
+        # 結果を格納する変数を準備（初期値はNone）
+        start_dt = None
+        end_dt = None
+
+        # タイムゾーンオブジェクトを取得
+        try:
+            tz = ZoneInfo(tz_str)
+        except Exception:
+            tz = ZoneInfo("UTC")
+
+        # 年月日時分を抽出する正規表現パターン
         pattern = re.compile(r'(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日.*?(\d{1,2}):(\d{1,2})')
-        matches = pattern.findall(text)
-        datetimes = [datetime(*map(int, match)) for match in matches]
-        if len(datetimes) == 2: return datetimes[1]
-        if len(datetimes) == 1: return datetimes[0]
-        return None
+
+        # 行ごとに処理する
+        for line in text.splitlines():
+            # 日時部分を探索
+            match = pattern.search(line)
+            if not match:
+                continue # 行に日時がなければ次の行へ
+
+            # datetimeオブジェクトを生成
+            time_parts = map(int, match.groups())
+            naive_dt = datetime(*time_parts)
+            # タイムゾーン情報を付与
+            aware_dt = naive_dt.replace(tzinfo=tz)
+
+            # キーワードに応じて、対応する変数に格納
+            if '開始' in line:
+                start_dt = aware_dt
+            elif '期限' in line or '終了' in line:
+                end_dt = aware_dt
+
+        # 抽出した開始日時と終了日時をタプルで返す
+        return (start_dt, end_dt)
