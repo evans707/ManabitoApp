@@ -1,39 +1,28 @@
-// src/views/Home.vue
-<template>
-  <div class="home-page">
-    <h2>ホーム</h2> {/* */}
-    <p>ここにホームページの主要なコンテンツ（例：直近の課題概要、通知など）が表示されます。</p>
-    
-    <section class="quick-look-assignments">
-      <h3>直近の課題 (サンプル)</h3> {/* */}
-      <ul>
-        <li>情報工学実験A - 提出期限: 2025年6月10日</li> {/* */}
-        <li>卒業論文テーマ提出 - 提出期限: 2025年6月15日</li> {/* */}
-      </ul>
-    </section>
+<script setup>
+import AssignmentCard from '@/components/assignment/AssignmentCard.vue'
+import { ref } from 'vue'
 
-    <section class="calendar-summary">
-      <h3>カレンダー概要 (プレースホルダー)</h3> {/* */}
-      <p>ここにカレンダーの簡易表示や、今日の予定などが表示されます。</p>
-    </section>
+// テストデータ
+const assignments = ref([
+  { id: 1, title: '情報工学実験A', due_date: '2025年6月10日', status: '未提出' },
+  { id: 2, title: '卒業論文テーマ提出', due_date: '2025年6月15日', status: '未提出' },
+  { id: 3, title: '線形代数レポート', due_date: '2025年5月28日', status: '提出済み' }
+])
+
+</script>
+
+<template>
+  <div class="dashboard-page">
+    <h2 class="text-2xl font-semibold mb-4">ホーム</h2> 
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <AssignmentCard
+        v-for="assignment in assignments"
+        :key="assignment.id"
+        :id="assignment.id"
+        :title="assignment.title"
+        :due-date="assignment.due_date"
+        :status="assignment.status"
+      />
+    </div>
   </div>
 </template>
-
-<style scoped>
-.home-page h2 {
-  margin-bottom: 1rem;
-}
-.quick-look-assignments, .calendar-summary {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  /* border: 1px solid #ddd; */ /* 構造把握のための仮枠線 */
-  /* border-radius: 8px; */
-}
-.quick-look-assignments ul {
-  list-style: none;
-  padding-left: 0;
-}
-.quick-look-assignments li {
-  margin-bottom: 0.5rem;
-}
-</style>

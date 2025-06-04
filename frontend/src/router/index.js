@@ -5,6 +5,7 @@ import CalendarView from '../views/CalendarView.vue'
 import UpcomingAssignmentsView from '../views/UpcomingAssignmentsView.vue'
 import AllAssignmentsView from '../views/AllAssignmentsView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import AssignmentDetailsView from '../views/AssignmentDetails.vue'
 
 const routes = [
   {
@@ -31,6 +32,12 @@ const routes = [
     path: '/settings',
     name: 'Settings',
     component: SettingsView
+  },
+  {
+    path: '/assignment/:id',
+    name: 'AssignmentDetails',
+    component: AssignmentDetailsView,
+    props: true
   }
 ]
 
