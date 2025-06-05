@@ -1,12 +1,9 @@
-from django.http import JsonResponse
-from accounts.models import User
-from accounts.ldap_auth import authenticate_with_ldap
-from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-import json
-
+from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
+from accounts.models import User
 
 class SampleAPIView(APIView):
 
@@ -15,21 +12,55 @@ class SampleAPIView(APIView):
 
 
 class Login(APIView):
-    
+    renderer_classes = [BrowsableAPIRenderer, JSONRenderer]
+
     def post(self, request):
         data = request.data
         university_id = data.get('university_id')
         password = data.get('password')
 
         if not university_id or not password:
-            return Response({'error': '学籍番号とパスワードが必要です'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'success': False,
+                'message': '学籍番号とパスワードが必要です'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        # LDAP認証を行うが、ここでは仮の認証を行う
-        # authenticate_with_ldap(university_id, password) == Trueとして
-        if True:
-            user, created = User.objects.get_or_create(university_id=university_id)
+        # LDAP認証を行う (ここでは仮の認証成功としています)
+        # ldap_authenticated = authenticate_with_ldap(university_id, password)
+        ldap_authenticated = True
+
+        if ldap_authenticated:
+            try:
+                user, created = User.objects.get_or_create(university_id=university_id)
+                
+                user.logined_at = timezone.now()
+                user.save(update_fields=['logined_at'])
+
+                request.session['university_id'] = user.university_id # セッションにユーザーIDを保存
+                
+                return Response({
+                    'success': True,
+                    'user': {
+                        'university_id': user.university_id,
+                        'logined_at': user.logined_at,
+                        'created': created,
+                    },
+                    'message': 'ログインに成功しました'
+                }, status=status.HTTP_200_OK)
             
-            request.session['user_id'] = user.id
-            return Response({'message': 'ログイン成功', 'created': created})
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'message': f'サーバーエラー: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
-            return Response({'error': 'LDAP認証に失敗しました'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({
+                'success': False,
+                'message': 'LDAP認証に失敗しました'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+    def get(self, request):
+        content = {
+            'message': 'ログインエンドポイントです。学籍番号 (university_id) とパスワード (password) をPOSTしてください。'
+        }
+        return Response(content)
