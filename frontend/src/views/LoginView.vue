@@ -52,10 +52,10 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios';
+// import { useRouter } from 'vue-router' // ストア内でリダイレクトするため不要
+import { useAuthStore } from '@/stores/auth'
 
-const router = useRouter();
+const authStore = useAuthStore();
 
 const university_id = ref('');
 const password = ref('');
@@ -67,21 +67,14 @@ async function handleLogin() {
   error_message.value = '';
 
   try {
-    const response = await axios.post('http://localhost:8000/api/login/', {
+    await authStore.login({
       university_id: university_id.value,
       password: password.value
     });
-
-    const data = response.data;
-
-    if (data.success) {
-      router.push({ name: 'Home' });
-    } else {
-      throw new Error('学籍番号またはパスワードが正しくありません。');
-    }
+    // ログイン成功時のリダイレクトはストアのloginアクション内で行われる
   } catch (error) {
-    error_message.value = error.message || 'ログイン処理中にエラーが発生しました。';
-    console.error('ログインエラー:', error);
+    error_message.value = error.response?.data?.message || error.message || 'ログイン処理中にエラーが発生しました。';
+    console.error('ログインエラー (View):', error);
   } finally {
     isLoading.value = false;
   }

@@ -1,5 +1,6 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import HomeView from '../views/Home.vue'
 import CalendarView from '../views/CalendarView.vue'
 import UpcomingAssignmentsView from '../views/UpcomingAssignmentsView.vue'
@@ -12,7 +13,8 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: HomeView
+    component: HomeView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/login',
@@ -20,41 +22,59 @@ const routes = [
     component: LoginView,
     meta: {
       guestOnly: true, 
-      requiresAuth: false, 
       layout: 'AuthLayout' 
     }
   },
   {
     path: '/calendar',
     name: 'Calendar',
-    component: CalendarView
+    component: CalendarView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/upcoming-assignments',
     name: 'UpcomingAssignments',
-    component: UpcomingAssignmentsView
+    component: UpcomingAssignmentsView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/all-assignments',
     name: 'AllAssignments',
-    component: AllAssignmentsView
+    component: AllAssignmentsView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: SettingsView
+    component: SettingsView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/assignment/:id',
     name: 'AssignmentDetails',
     component: AssignmentDetailsView,
-    props: true
+    props: true,
+    meta: { requiresAuth: true }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
+})
+
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const guestOnly = to.matched.some(record => record.meta.guestOnly)
+
+  if (requiresAuth && !authStore.isUserAuthenticated) {
+    next({ name: 'Login', query: { redirect: to.fullPath } })
+  } else if (guestOnly && authStore.isUserAuthenticated) {
+    next({ name: 'Home' })
+  } else {
+    next()
+  }
 })
 
 export default router

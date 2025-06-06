@@ -2,8 +2,15 @@
 import Header from './components/layouts/Header.vue'
 import SideBar from './components/layouts/SideBar.vue'
 import { useRoute } from 'vue-router'
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const authStore = useAuthStore()
+
+onMounted(async () => {
+  await authStore.checkAuthStatus()
+})
 </script>
 
 <template>
