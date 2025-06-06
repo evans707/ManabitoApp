@@ -1,5 +1,7 @@
 <script setup>
 import AssignmentCard from '@/components/assignment/AssignmentCard.vue'
+import Calendar from '@/components/Calendar.vue'
+import Card from '@/components/common/Card.vue'
 import { ref } from 'vue'
 
 // テストデータ
@@ -13,7 +15,7 @@ const assignments = ref([
 
 <template>
   <div class="dashboard-page">
-    <h2 class="text-2xl font-semibold mb-4">ホーム</h2> 
+    <h2 class="text-2xl font-semibold mb-4 text-gray-700">ホーム</h2> 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <AssignmentCard
         v-for="assignment in assignments"
@@ -23,6 +25,11 @@ const assignments = ref([
         :due-date="assignment.due_date"
         :status="assignment.status"
       />
+    </div>
+    <div class="mt-8">
+      <Card>
+        <Calendar />
+      </Card>
     </div>
   </div>
 </template>

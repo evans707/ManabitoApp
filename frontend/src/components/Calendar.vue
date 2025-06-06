@@ -65,140 +65,48 @@ function isToday(dateObj) {
 </script>
 
 <template>
-  <div class="calendar">
-    <div class="calendar-header">
-      <div class="nav-center">
-        <button class="button" @click="goToday">今日</button>
-        <button class="button" @click="prevMonth">＜</button>
-        <button class="button" @click="nextMonth">＞</button>
-        <span class="current-month">{{ year }}年 {{ month + 1 }}月</span>
+  <div>
+    <div class="flex items-center justify-start pb-4">
+      <div class="flex items-center gap-4">
+        <button class="rounded-md border-2 border-gray-200 bg-white px-4 py-1.5 transition-colors hover:bg-gray-100 text-gray-600 font-semibold" @click="goToday">今日</button>
+        <button class="rounded-md border-2 border-gray-200 bg-white px-4 py-1.5 transition-colors hover:bg-gray-100 text-gray-600 font-semibold" @click="prevMonth">＜</button>
+        <button class="rounded-md border-2 border-gray-200 bg-white px-4 py-1.5 transition-colors hover:bg-gray-100 text-gray-600 font-semibold" @click="nextMonth">＞</button>
+        <span class="text-xl text-gray-600 font-semibold">{{ year }}年 {{ month + 1 }}月</span>
       </div>
     </div>
 
-    <table class="calendar-table">
+    <div class="rounded-md overflow-hidden">
+      <table class="w-full table-fixed border-collapse">
       <thead>
-        <tr class="daily-cell">
-          <th v-for="(day, i) in days" :key="i">{{ day }}</th>
+        <tr>
+          <th v-for="(day, i) in days" :key="i" class="border border-gray-300 bg-gray-100 p-1.5 text-center text-gray-600">{{ day }}</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="(week, i) in calendar" :key="i">
-          <td v-for="dateObj in week" :key="dateObj.date" class="date-cell">
+          <td v-for="dateObj in week" :key="dateObj.date"
+              :class="[
+                'border border-gray-300 text-left align-top p-1.5 bg-white', // text-center を text-left に変更
+                { 'opacity-50': !dateObj.isCurrent }
+              ]">
             <span
               :class="[
-                'date-number',
-                { today: isToday(dateObj.date) },
-                { 'other-month': !dateObj.isCurrent }
+                isToday(dateObj.date)
+                  ? 'bg-green-700 text-white rounded-full w-6 h-6 flex items-center justify-center font-semibold' // 円形表示と中央揃えのためのスタイル
+                  : 'inline-block py-1 px-1.5 text-gray-600 font-semibold' // 通常の日付
               ]"
             >
               {{ dateObj.date.getDate() }}
             </span>
-            <div class="event-cell" :class="{ 'other-month': !dateObj.isCurrent }">
-              <!-- 予定があればここに表示 -->
-              <div class="event-item">予定1</div>
-              <div class="event-item">予定2</div>
+            <div class="relative h-12 p-1 text-left text-xs text-gray-600">
+              <!-- 予定があればここに表示 (サンプル) -->
+              <div class="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap">予定1</div>
+              <div class="mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap">予定2</div>
             </div>
           </td>
         </tr>
       </tbody>
     </table>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.container {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-}
-
-.calendar-header {
-  position: relative;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  background-color: white;
-  padding: 1rem;
-  color: black;
-}
-
-.nav-center {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.button{
-  background-color: white;
-  border: 2px solid #e6e6e6;
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-}
-
-.current-month {
-  font-size: 1.2rem;
-  color: black;
-}
-
-.calendar-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  text-align: center;
-  vertical-align: top;
-  padding: 6px;
-}
-
-.daily-cell th {
-  background-color: #e6e6e6;
-  color: black;
-}
-
-.date-cell {
-  background-color: #ffffff;
-  height: 40px;
-  color: black;
-}
-
-.date-number {
-  display: inline-block;
-  padding: 4px 6px;
-  background-color: #ffffff;
-  color: black;
-}
-
-.today {
-  background-color: #028760;
-  color: white;
-  border-radius: 50%;
-  padding: 4px 8px;
-  display: inline-block;
-}
-
-.other-month {
-  opacity: 0.3;
-}
-
-.event-cell {
-  background-color: white;
-  height: 80px;
-  font-size: 0.8rem;
-  text-align: left;
-  padding: 4px;
-  position: relative;
-  color: black;
-}
-
-.event-item {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 2px;
-}
-
-
-</style>
