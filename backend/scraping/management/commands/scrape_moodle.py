@@ -66,9 +66,9 @@ class Command(BaseCommand):
                     # update_or_createでデータの登録・更新を自動化
                     obj, created = Assignment.objects.update_or_create(
                         user=user,
-                        title=item['title'],
+                        url=item['url'],
                         defaults={
-                            'url': item['url'],
+                            'title': item['title'],
                             'due_date': due_date_aware,
                         }
                     )

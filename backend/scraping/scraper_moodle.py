@@ -26,7 +26,6 @@ class MoodleScraper:
         self.username = username
         self.password = password
         self.login_url = moodle_login_url
-        self.my_courses_url = self.login_url.replace('/login/index.php', '/my/courses.php')
         self.logger = logger
 
         # ブラウザ設定
@@ -109,21 +108,20 @@ class MoodleScraper:
     def _get_courses(self):
         # マイコースページから授業の一覧を取得
         # タプル(course_name, course_url)のリストを返す
-        self.logger.info(f"マイコースページ ({self.my_courses_url}) に遷移して授業一覧を取得します...")
-        self.driver.get(self.my_courses_url)
+        self.logger.info(f"授業一覧を取得します...")
         courses = []
         try:
-            elements = self.wait_long.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a.aalink.coursename")))
+            selector = 'section[data-block="course_list"] ul.unlist a'
+            elements = self.wait_long.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, selector)))
             self.logger.info(f"{len(elements)} 件のコース要素が見つかりました。")
             for el in elements:
-                course_url = el.get_attribute("href")
                 try:
-                    child_el = el.find_element(By.CSS_SELECTOR, "span.multiline")
-                    course_name = child_el.get_attribute("title")
-                    if course_url:
+                    course_url = el.get_attribute("href")
+                    course_name = el.text
+                    if course_url and course_name:
                         courses.append((course_name, course_url))
                 except Exception as e:
-                    self.logger.warning(f"授業タイトルの取得に失敗しました: {e} (URL: {course_url})")
+                    self.logger.warning(f"授業タイトルまたはURLの取得に失敗しました: {e}")
         except TimeoutException:
             self.logger.error("登録されている授業がないか、マイコースページの読み込みに失敗しました。")
             self.driver.save_screenshot("error_get_courses_timeout.png")

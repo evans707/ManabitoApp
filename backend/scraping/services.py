@@ -45,9 +45,9 @@ def scrape_moodle(user: User, password: str):
                 
                 obj, created = Assignment.objects.update_or_create(
                     user=user,
-                    title=item['title'],
+                    url=item['url'],
                     defaults={
-                        'url': item['url'],
+                        'title': item['title'],
                         'due_date': due_date_aware,
                     }
                 )
