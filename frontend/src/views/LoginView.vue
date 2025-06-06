@@ -13,7 +13,7 @@
             autocomplete="username"
             required
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-            placeholder="学籍番号を入力"
+            placeholder="00XX000"
           />
         </div>
 
@@ -52,7 +52,6 @@
 
 <script setup>
 import { ref } from 'vue'
-// import { useRouter } from 'vue-router' // ストア内でリダイレクトするため不要
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore();
@@ -71,7 +70,6 @@ async function handleLogin() {
       university_id: university_id.value,
       password: password.value
     });
-    // ログイン成功時のリダイレクトはストアのloginアクション内で行われる
   } catch (error) {
     error_message.value = error.response?.data?.message || error.message || 'ログイン処理中にエラーが発生しました。';
     console.error('ログインエラー (View):', error);

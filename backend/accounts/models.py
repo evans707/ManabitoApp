@@ -7,7 +7,6 @@ class UserManager(BaseUserManager):
     def create_user(self, university_id, password=None, **extra_fields):
         if not university_id:
             raise ValueError('The University ID must be set')
-        # university_id の正規化などが必要であればここで行う
         user = self.model(university_id=university_id, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

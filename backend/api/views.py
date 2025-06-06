@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from accounts.models import User
 
 class SampleAPIView(APIView):
-    permission_classes = [IsAuthenticated] # 認証ガードを追加
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         return Response({"message": f"Hello, authenticated user {request.user.university_id}!"}, status=status.HTTP_200_OK)
@@ -80,7 +80,7 @@ class Login(APIView):
         return Response(content)
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated] # ログアウトは認証済みユーザーのみ実行可能
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         django_logout(request)
@@ -93,11 +93,7 @@ class AuthStatusView(APIView):
                 "isAuthenticated": True,
                 "user": {
                     "university_id": request.user.university_id,
-                    # 他に必要なユーザー情報があればここに追加
                 }
             }, status=status.HTTP_200_OK)
         else:
-            # 認証されていない場合は 401 Unauthorized を返す方がRESTful
-            # return Response({"isAuthenticated": False}, status=status.HTTP_401_UNAUTHORIZED)
-            # もしくは、成功として isAuthenticated: false を返す
             return Response({"isAuthenticated": False}, status=status.HTTP_200_OK)
