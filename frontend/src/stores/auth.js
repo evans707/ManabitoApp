@@ -1,13 +1,6 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import apiClient from '@/api/axios'
 import router from '@/router' // ルーターインスタンスをインポート
-
-// Axiosのデフォルト設定 (クロスオリジンでクッキーを送信するために必要)
-axios.defaults.withCredentials = true;
-// DjangoのCSRF保護に対応するため、AxiosにCSRFトークンの扱いを任せる設定
-axios.defaults.xsrfCookieName = 'csrftoken';
-axios.defaults.xsrfHeaderName = 'X-CSRFToken';
-
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -17,7 +10,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(credentials) {
       try {
-        const response = await axios.post('http://localhost:8000/api/login/', credentials)
+        const response = await apiClient.post('/login/', credentials)
         const data = response.data
         if (data.success) {
           this.isAuthenticated = true
@@ -40,7 +33,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async logout() {
       try {
-        await axios.post('http://localhost:8000/api/logout/')
+        await apiClient.post('/logout/')
       } catch (error) {
         console.error('Error during API logout call:', error)
       } finally {
@@ -57,7 +50,7 @@ export const useAuthStore = defineStore('auth', {
         return;
       }
       try {
-        const response = await axios.get('http://localhost:8000/api/auth/status/')
+        const response = await apiClient.get('/auth/status/')
         if (response.status === 200 && response.data.isAuthenticated) {
           this.isAuthenticated = true
           this.user = response.data.user

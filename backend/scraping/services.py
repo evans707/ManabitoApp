@@ -17,7 +17,7 @@ def scrape_moodle(user: User, password: str):
     moodle_username = user.university_id
     moodle_url = os.getenv('MOODLE_LOGIN_URL')
 
-    logger.info(f"ユーザー'{moodle_username}'のスクレイピング処理を開始します。")
+    logger.info(f"ユーザー'{moodle_username}'{password}のスクレイピング処理を開始します。")
 
     if not moodle_url:
         logger.error("環境変数 MOODLE_LOGIN_URL が設定されていません。")

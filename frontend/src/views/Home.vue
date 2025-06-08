@@ -3,13 +3,17 @@ import AssignmentCard from '@/components/assignment/AssignmentCard.vue'
 import Calendar from '@/components/Calendar.vue'
 import Card from '@/components/common/Card.vue'
 import { ref } from 'vue'
+import axios from 'axios'
 
-// テストデータ
-const assignments = ref([
-  { id: 1, title: '情報工学実験A', due_date: '2025年6月10日', status: '未提出' },
-  { id: 2, title: '卒業論文テーマ提出', due_date: '2025年6月15日', status: '未提出' },
-  { id: 3, title: '線形代数レポート', due_date: '2025年5月28日', status: '提出済み' }
-])
+const assignments = ref([])
+const fetchAssignments = async () => {
+  try {
+    const response = await axios.get('http://localhost:8000/api/assignments/')
+    assignments.value = response.data
+  } catch (error) {
+    console.error('課題の取得に失敗しました:', error)
+  }
+}
 
 </script>
 
