@@ -9,7 +9,7 @@ from django.views.decorators.cache import never_cache
 # rest_framework
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
@@ -17,6 +17,8 @@ from rest_framework.permissions import AllowAny
 # local
 from accounts.models import User
 from scraping.services import scrape_moodle
+from scraping.serializers import AssignmentSerializer
+from scraping.models import Assignment
 
 
 # 認証されたユーザーに対してメッセージを返すサンプルAPI
@@ -122,3 +124,15 @@ class CsrfTokenView(APIView):
 
     def get(self, request):
         return Response({"detail": "CSRF cookie set."})
+    
+
+class AssignmentViewSet(viewsets.ModelViewSet):
+    queryset = Assignment.objects.all()
+    serializer_class = AssignmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

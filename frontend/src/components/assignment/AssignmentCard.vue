@@ -6,7 +6,11 @@
     >
       {{ title }}
     </h3>
-    <p class="text-sm text-gray-600 mb-1">提出期限: {{ due_date }}</p>
+
+    <p class="text-sm text-gray-600 mb-1">
+      提出期限: {{ formattedDueDate }}
+    </p>
+    
     <p class="text-sm mb-1" :class="statusColorClass">
       ステータス: {{ status }}
     </p>
@@ -35,18 +39,37 @@ const props = defineProps({
     type: String,
     required: true
   },
-  due_date: {
+  dueDate: {
     type: String,
-    required: true
+    default: null 
   },
   status: {
     type: String,
-    required: true,
-    validator: (value) => ['未提出', '提出済み'].includes(value)
+    default: null
+    // required: true,
+    // validator: (value) => ['未提出', '提出済み'].includes(value)
   }
 })
 
 const router = useRouter()
+
+const formattedDueDate = computed(() => {
+  if (!props.dueDate) {
+    return '期限なし'
+  }
+  try {
+    const date = new Date(props.dueDate)
+    const year = date.getFullYear()
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const day = date.getDate().toString().padStart(2, '0')
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${year}年${month}月${day}日 ${hours}:${minutes}`
+  } catch (e) {
+    console.error("Invalid date format:", props.dueDate, e)
+    return '無効な日付'
+  }
+})
 
 const statusColorClass = computed(() => {
   return props.status === '提出済み' ? 'text-green-500' : 'text-gray-500'
