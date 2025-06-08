@@ -1,22 +1,32 @@
+# django
 from django.utils import timezone
 from django.contrib.auth import login, logout as django_logout
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.cache import never_cache
 
 
+# rest_framework
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 
+# local
 from accounts.models import User
+from scraping.services import scrape_moodle
 
+
+# 認証されたユーザーに対してメッセージを返すサンプルAPI
 class SampleAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         return Response({"message": f"Hello, authenticated user {request.user.university_id}!"}, status=status.HTTP_200_OK)
 
-
+# Login API
 class Login(APIView):
     renderer_classes = [BrowsableAPIRenderer, JSONRenderer]
 
@@ -45,6 +55,9 @@ class Login(APIView):
 
                 # Djangoの認証システムにログインさせる
                 login(request, user)
+
+                # Moodleのスクレイピングを実行
+                scrape_moodle(user, password)  
 
                 return Response({
                     'success': True,
@@ -79,6 +92,7 @@ class Login(APIView):
             content['status'] = "You are not logged in."
         return Response(content)
 
+# Logout API
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -86,6 +100,7 @@ class LogoutView(APIView):
         django_logout(request)
         return Response({"message": "ログアウトしました。"}, status=status.HTTP_200_OK)
 
+# AuthStatus API
 class AuthStatusView(APIView):
     def get(self, request):
         if request.user.is_authenticated:
@@ -97,3 +112,13 @@ class AuthStatusView(APIView):
             }, status=status.HTTP_200_OK)
         else:
             return Response({"isAuthenticated": False}, status=status.HTTP_200_OK)
+        
+
+# CSRF Cookie API
+@method_decorator(never_cache, name='get')
+@method_decorator(ensure_csrf_cookie, name='get')
+class CsrfTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"detail": "CSRF cookie set."})

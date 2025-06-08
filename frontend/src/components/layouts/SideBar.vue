@@ -21,7 +21,7 @@
 
     <!-- 設定とログアウト -->
     <div class="px-2 space-y-1">
-      <SidebarItem to="/settings" label="設定" :iconSvg="settingsIconSvg" /> <!-- 設定ページも認証が必要 -->
+      <SidebarItem to="/settings" label="設定" :iconSvg="settingsIconSvg" />
       <a href="#" @click.prevent="handleLogout" class="flex items-center space-x-3 px-4 py-3 hover:bg-green-600 rounded-lg transition-colors">
         <span class="h-6 w-6 shrink-0" v-html="logoutIconSvg"></span>
         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out whitespace-nowrap">

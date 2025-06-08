@@ -43,7 +43,6 @@ export const useAuthStore = defineStore('auth', {
         await axios.post('http://localhost:8000/api/logout/')
       } catch (error) {
         console.error('Error during API logout call:', error)
-        // API呼び出しが失敗しても、フロントエンド側ではログアウト処理を続行
       } finally {
         this.isAuthenticated = false
         this.user = null

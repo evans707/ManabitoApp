@@ -4,13 +4,24 @@ import SideBar from './components/layouts/SideBar.vue'
 import { useRoute } from 'vue-router'
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import axios from 'axios';
 
 const route = useRoute()
 const authStore = useAuthStore()
 
 onMounted(async () => {
-  await authStore.checkAuthStatus()
-})
+  try {
+    console.log('Attempting to refresh CSRF token...');
+    await axios.get('http://localhost:8000/api/csrf/');
+    console.log('CSRF token has been successfully refreshed.');
+
+    await authStore.checkAuthStatus();
+    console.log('Auth status check complete.');
+
+  } catch (error) {
+    console.error('An error occurred during the onMounted setup:', error);
+  }
+});
 </script>
 
 <template>
