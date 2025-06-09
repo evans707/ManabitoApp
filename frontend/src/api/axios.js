@@ -22,8 +22,7 @@ const apiClient = axios.create({
 apiClient.defaults.withCredentials = true;
 
 apiClient.interceptors.request.use(config => {
-  // POSTなどの特定のメソッドの場合のみCSRFトークンを付与する方が安全
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method.toUpperCase())) {
+  if (['POST', 'GET', 'PUT', 'PATCH', 'DELETE'].includes(config.method.toUpperCase())) {
     const token = getCookie('csrftoken');
     if (token) {
       config.headers['X-CSRFToken'] = token;
