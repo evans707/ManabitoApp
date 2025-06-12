@@ -69,6 +69,7 @@ class Command(BaseCommand):
                         url=item['url'],
                         defaults={
                             'title': item['title'],
+                            'content': item['content'],
                             'due_date': due_date_aware,
                         }
                     )

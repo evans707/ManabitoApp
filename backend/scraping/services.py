@@ -48,6 +48,7 @@ def scrape_moodle(user: User, password: str):
                     url=item['url'],
                     defaults={
                         'title': item['title'],
+                        'content': item['content'],
                         'due_date': due_date_aware,
                     }
                 )

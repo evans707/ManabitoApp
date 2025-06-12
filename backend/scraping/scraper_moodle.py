@@ -184,10 +184,18 @@ class MoodleScraper:
             else:
                 self.logger.warning(f"URL: {assign_url} で課題期日が見つかりませんでした。")
             
+            content_div = soup.select_one("div.activity-description")
+            if content_div:
+                content = content_div.text
+            else:
+                content = None
+                self.logger.warning(f"URL: {assign_url} でactivity-descriptionが見つかりませんでした。")
+            
             start_date, due_date = (date[0], date[1]) if date else (None, None)
 
             self.logger.info(f"課題取得: {title}, URL: {assign_url}, 期日: {due_date}")
-            return {'title': title, 'url': assign_url, 'course': course_name, 'start_date': start_date, 'due_date': due_date}
+            return {'title': title, 'url': assign_url,'course': course_name,
+                    'start_date': start_date, 'due_date': due_date, 'content': content}
 
         except requests.exceptions.RequestException as e:
             self.logger.error(f"課題詳細ページの取得に失敗しました ({assign_url}): {e}")
