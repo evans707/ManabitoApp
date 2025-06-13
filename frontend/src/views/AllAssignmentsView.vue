@@ -1,29 +1,27 @@
 <template>
   <div class="p-6">
-    <h1 class="text-2xl font-bold text-gray-800 mb-4">課題一覧</h1>
-    <ul class="space-y-4">
-      <li v-for="task in allAssignments" :key="task.id" class="pl-4 list-disc">
-        <div class="font-semibold text-gray-800">{{ task.title }}</div>
-        <div class="ml-4 text-sm text-gray-600">
-          <p>提出期限：{{ task.dueDate }}</p>
-          <p>ステータス：{{ task.status }}</p>
-          <p>内容：{{ task.description }}</p>
-          <RouterLink
-            :to="`/assignment/${task.id}`"
-            class="text-blue-600 hover:underline inline-block mt-1"
-          >
-            詳細
-          </RouterLink>
-        </div>
-      </li>
-    </ul>
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">課題一覧</h1>
+
+    <div v-for="task in allAssignments" :key="task.id" class="bg-white rounded-md shadow p-4 mb-4">
+      <h2 class="text-lg font-semibold text-gray-800">{{ task.title }}</h2>
+      <p class="text-sm text-gray-600 mt-1">提出期限：{{ task.dueDate }}</p>
+      <p class="text-sm text-gray-600 mt-1">ステータス：{{ task.status }}</p>
+      <p class="text-sm text-gray-600 mt-1">内容：{{ task.description }}</p>
+
+      <div class="mt-3">
+        <RouterLink
+          :to="`/assignment/${task.id}`"
+          class="inline-block bg-green-700 text-white text-sm px-4 py-1.5 rounded hover:bg-green-800"
+        >
+          詳細を見る
+        </RouterLink>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
-
-const route = useRoute()
+import { computed } from 'vue'
 
 // ダミーデータ
 const allAssignments = {
