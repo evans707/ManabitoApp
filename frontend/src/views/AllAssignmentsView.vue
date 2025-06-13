@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="AllAssignments-page">
     <h1 class="text-2xl font-bold text-gray-800 mb-6">課題一覧</h1>
 
     <div v-for="task in allAssignments" :key="task.id" class="bg-white rounded-md shadow p-4 mb-4">
