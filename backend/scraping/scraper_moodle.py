@@ -128,12 +128,13 @@ class MoodleScraper:
         self.username: str = username
         self.password: str = password
         self.login_url: str = moodle_login_url
+        self.home_url: Optional[str] = None
+        self.lang_code: str = 'ja'
         self.logger: logging.Logger = logger
         self.session: requests.Session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         })
-        self.home_url: Optional[str] = None
         self.logger.info("MoodleScraperが初期化されました。")
 
     def __enter__(self) -> 'MoodleScraper':
@@ -178,8 +179,9 @@ class MoodleScraper:
             # ログイン成功の確認
             soup = BeautifulSoup(login_res.text, 'html.parser')
             if soup.select_one(".usermenu"):
-                self.home_url = login_res.url
                 self.logger.info("ログインに成功しました。")
+                self.home_url = login_res.url
+                self._extract_lang_code(soup)
                 return True
             else:
                 self.logger.error("ログインに失敗しました。ID/Passwordが間違っている可能性があります。")
@@ -352,17 +354,9 @@ class MoodleScraper:
             res.raise_for_status()
             soup = BeautifulSoup(res.text, 'html.parser')
 
-            title, date, lang_code, content = None, None, None, None
+            title, date, content, is_submitted = None, None, None, False
 
-            lang_div = soup.select_one("div.container-fluid a.dropdown-toggle.nav-link")
-            if lang_div:
-                lang_text = lang_div.text
-                lang_code = self._extract_lang_code(lang_text)
-                if not lang_code:
-                    self.logger.warning(f"URL: {assign_url} で言語コードが見つかりませんでした。")
-            else:
-                self.logger.warning(f"URL: {assign_url} で言語を特定するための要素が見つかりませんでした。")
-
+            # 課題期日の取得
             info_div = soup.select_one("div.activity-information")
             if info_div:
                 title = info_div.get("data-activityname")
@@ -372,10 +366,11 @@ class MoodleScraper:
             date_div = soup.select_one("div.activity-dates")
             if date_div:
                 date_text = date_div.get_text()
-                date = self._parse_start_end_datetimes(date_text, lang_code)
+                date = self._parse_start_end_datetimes(date_text, self.lang_code)
             else:
                 self.logger.warning(f"URL: {assign_url} で課題期日が見つかりませんでした。")
 
+            # 課題内容の取得
             content_div = soup.select_one("div.activity-description")
             if content_div:
                 content = content_div.text.strip()
@@ -384,8 +379,13 @@ class MoodleScraper:
 
             start_date, due_date = (date[0], date[1]) if date else (None, None)
 
-            if not title:
-                return None
+            # 課題が提出済みかの判断
+            if 'assign' in assign_url:
+                is_submitted = self._scrape_is_submitted_assign(assign_url, soup)
+            elif 'quiz' in assign_url:
+                is_submitted = self._scrape_is_submitted_quiz(assign_url, soup)
+            else:
+                self.logger.warning(f"URL: {assign_url} が課題か小テストかを判断できませんでした。")
 
             self.logger.info(f"課題取得: {title}, URL: {assign_url}, 期日: {due_date}")
             return {
@@ -394,12 +394,44 @@ class MoodleScraper:
                 'course': course_name,
                 'start_date': start_date,
                 'due_date': due_date,
-                'content': content
+                'content': content,
+                'is_submitted': is_submitted
             }
 
         except requests.exceptions.RequestException as e:
             self.logger.error(f"課題詳細ページの取得に失敗しました ({assign_url}): {e}")
             return None
+    
+    def _scrape_is_submitted_assign(self, assin_url: str, soup: BeautifulSoup) -> bool:
+        """課題ページから提出ステータスを取得し返します。
+
+        Args:
+            assign_url (str): 課題ページのURL。
+            soup (BeautifulSoup): 解析対象のページのBeautifulSoupオブジェクト。
+
+        Returns:
+            bool: 提出済みならTrue、未提出、取得できない場合はFalse。
+        """
+        is_submitted = False
+        td_submitted = soup.select_one("div.submissionstatustable td.submissionstatussubmitted")
+        if td_submitted:
+            is_submitted = True
+        return is_submitted
+    
+    def _scrape_is_submitted_quiz(self, assin_url: str, soup: BeautifulSoup) -> bool:
+        """小テストページから提出ステータスを取得し返します。
+
+        Args:
+            assign_url (str): 課題ページのURL。
+            soup (BeautifulSoup): 解析対象のページのBeautifulSoupオブジェクト。
+        Returns:
+            bool: 提出済みならTrue、未提出、取得できない場合はFalse。
+        """
+        is_submitted = False
+        div_submitted = soup.select_one("#feedback")
+        if div_submitted:
+            is_submitted = True
+        return is_submitted
 
     @classmethod
     def _parse_start_end_datetimes(cls, text: str, lang_code: Optional[str], tz_str: str = "Asia/Tokyo") -> Tuple[Optional[datetime], Optional[datetime]]:
@@ -417,7 +449,7 @@ class MoodleScraper:
         start_dt, end_dt = None, None
 
         if not lang_code or lang_code not in cls._DATE_CONFIG:
-            lang_code = 'en'  # デフォルトとして英語を設定
+            lang_code = 'ja'  # デフォルトとして日本語を設定
 
         config = cls._DATE_CONFIG[lang_code]
         pattern = config['pattern']
@@ -460,21 +492,29 @@ class MoodleScraper:
 
         return (start_dt, end_dt)
 
-    @staticmethod
-    def _extract_lang_code(text: str) -> Optional[str]:
+    def _extract_lang_code(self, soup: BeautifulSoup) -> str:
         """テキストから括弧で囲まれた言語コード (例: "(ja)") を抽出します。
 
         Args:
-            text (str): 言語コードを含む可能性のあるテキスト。
+            soup (BeautifulSoup): 解析対象のページのBeautifulSoupオブジェクト。
 
         Returns:
-            Optional[str]: 見つかった言語コード。複数ある場合は最後のものを返す。見つからない場合はNone。
+            str: 見つかった言語コード。複数ある場合は最後のものを返す。見つからない場合は日本語。
         """
-        matches = re.findall(r'\(([a-zA-Z\-_]+)\)', text)
+        # 言語コードの特定
+        lang_div = soup.select_one("div.container-fluid a.dropdown-toggle.nav-link")
+        if lang_div:
+            lang_text = lang_div.text
+        else:
+            self.logger.warning(f"言語を特定するための要素が見つかりませんでした。")
+
+        matches = re.findall(r'\(([a-zA-Z\-_]+)\)', lang_text)
 
         if matches:
             # 複数マッチした場合、最後のものを言語コードとみなして返す
+            self.logger.info(f"特定された言語コードは{matches[-1]}です。")
             return matches[-1]
         else:
-            # マッチするものが一つもなければNoneを返す
-            return None
+            # マッチするものが一つもなければ日本語を適用
+            self.logger.warning(f"言語コードが見つかりませんでした。日本語を適用します。")
+            return 'ja'

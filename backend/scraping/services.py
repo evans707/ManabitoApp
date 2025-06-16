@@ -50,6 +50,7 @@ def scrape_moodle(user: User, password: str):
                         'title': item['title'],
                         'content': item['content'],
                         'due_date': due_date_aware,
+                        'is_submitted': item['is_submitted']
                     }
                 )
                 if created:

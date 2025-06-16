@@ -58,11 +58,8 @@ class Command(BaseCommand):
                 # 取得した課題をデータベースに保存
                 saved_count = 0
                 updated_count = 0
-                for item in assignments_data:
-                    due_date_aware = None
-                    if item['due_date']:
-                        due_date_aware = item['due_date']
-                    
+                for item in assignments_data: 
+                                    
                     # update_or_createでデータの登録・更新を自動化
                     obj, created = Assignment.objects.update_or_create(
                         user=user,
@@ -70,7 +67,8 @@ class Command(BaseCommand):
                         defaults={
                             'title': item['title'],
                             'content': item['content'],
-                            'due_date': due_date_aware,
+                            'due_date': item['due_date'],
+                            'is_submitted': item['is_submitted']
                         }
                     )
                     if created:
