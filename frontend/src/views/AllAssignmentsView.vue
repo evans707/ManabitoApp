@@ -19,7 +19,7 @@
     <div v-for="task in filteredAssignments" :key="task.id" class="bg-white rounded-md shadow p-4 border border-gray-200 mb-4">
       <h2 class="text-lg font-semibold text-gray-800">{{ task.title }}</h2>
       <p class="text-sm text-gray-600 mt-1">提出期限：{{ task.dueDate }}</p>
-      <p class="text-sm mt-1">
+      <p class="text-sm mt-1 text-gray-600">
         ステータス：
         <span :class="task.status === '提出済み' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'">
           {{ task.status }}
