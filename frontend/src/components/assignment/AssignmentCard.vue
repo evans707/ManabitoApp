@@ -11,8 +11,9 @@
       提出期限: {{ formattedDueDate }}
     </p>
     
-    <p class="text-sm mb-1" :class="statusColorClass">
-      ステータス: {{ status }}
+    <p class="text-sm mb-1">
+      <span class="text-gray-600">ステータス: </span>
+      <span :class="statusColorClass">{{ status }}</span>
     </p>
     <button
       :class="buttonClass"
@@ -46,8 +47,6 @@ const props = defineProps({
   status: {
     type: String,
     default: null
-    // required: true,
-    // validator: (value) => ['未提出', '提出済み'].includes(value)
   }
 })
 
@@ -72,7 +71,7 @@ const formattedDueDate = computed(() => {
 })
 
 const statusColorClass = computed(() => {
-  return props.status === '提出済み' ? 'text-green-500' : 'text-gray-500'
+  return props.status === '提出済み' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'
 })
 
 const buttonText = computed(() => {
