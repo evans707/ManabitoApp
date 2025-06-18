@@ -162,10 +162,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ログ設定
 LOGGING = {
-    'version': 1,  # 固定
-    'disable_existing_loggers': False,  # 既存のロガーを無効化しない
+    'version': 1,
+    'disable_existing_loggers': False,
     
-    # ログのフォーマット（形式）を定義
     'formatters': {
         'verbose': {
             'format': '{levelname} {asctime} {module} {message}',
@@ -177,32 +176,32 @@ LOGGING = {
         },
     },
     
-    # ログをどこに出力するか（ハンドラ）を定義
     'handlers': {
         'console': {
-            'level': 'INFO',  # INFOレベル以上のログをコンソールに出力
+            'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
+        # 'file' ハンドラを RotatingFileHandler を使うように変更
         'file': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'django.log'), # プロジェクトルートに 'django.log' を作成
+            'class': 'logging.handlers.RotatingFileHandler', 
+            'filename': os.path.join(BASE_DIR, 'django.log'),
             'formatter': 'verbose',
+            'maxBytes': 1024 * 1024 * 5,  # 5MB
+            'backupCount': 5,            # 5世代までバックアップを保持
         }
     },
     
-    # どのロガーにどのハンドラを適用するかを定義
     'loggers': {
-        # Django自体のログ設定
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
-        # scraper_moodle.pyのためのログ設定
         'scraping': {
-            'handlers': ['console'], # コンソールとファイル両方に出力
+            # このロガーは、上記で設定したローテーション機能付きの 'file' ハンドラを使用します
+            'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,
         },
