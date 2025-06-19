@@ -28,7 +28,7 @@ class Assignment(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='assignments', null=True, blank=True)
     title = models.CharField(max_length=255, verbose_name='課題タイトル')
     content = models.TextField(verbose_name='課題詳細', blank=True, null=True)
-    url = models.URLField(max_length=512, verbose_name='課題URL')
+    url = models.URLField(max_length=512, verbose_name='課題URL', null=True, blank=True)
     due_date = models.DateTimeField(verbose_name='提出期限', null=True, blank=True)
     is_submitted = models.BooleanField(default=False, verbose_name='提出済み')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
