@@ -15,14 +15,23 @@
       <span class="text-gray-600">ステータス: </span>
       <span :class="statusColorClass">{{ status }}</span>
     </p>
-    <button
-      :class="buttonClass"
-      class="mt-4 font-medium py-2 px-4 rounded-lg transition-colors w-full"
-      :disabled="status === '提出済み'"
-      @click="handleButtonClick"
-    >
-      {{ buttonText }}
-    </button>
+
+    <div class="mt-4 flex items-center gap-2 justify-end">
+      <button
+        v-if="url && status !== '提出済み'"
+        @click="openSubmissionPage"
+        class="inline-block bg-green-500 text-white text-sm font-medium py-2 px-4 rounded-lg hover:bg-green-600 transition-colors"
+      >
+        提出
+      </button>
+
+      <button
+        @click="handleDetailsClick"
+        class="inline-block bg-green-500 text-white text-sm font-medium py-2 px-4 rounded-lg hover:bg-green-600 transition-colors"
+      >
+        詳細
+      </button>
+    </div>
   </Card>
 </template>
 
@@ -47,10 +56,22 @@ const props = defineProps({
   status: {
     type: String,
     default: null
+  },
+  // urlプロパティを追加
+  url: {
+    type: String,
+    default: null
   }
 })
 
 const router = useRouter()
+
+// --- イベントハンドラ (提出ページを開く) ---
+function openSubmissionPage() {
+  if (props.url) {
+    window.open(props.url, '_blank', 'noopener,noreferrer');
+  }
+}
 
 const formattedDueDate = computed(() => {
   if (!props.dueDate) {
@@ -74,20 +95,8 @@ const statusColorClass = computed(() => {
   return props.status === '提出済み' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'
 })
 
-const buttonText = computed(() => {
-  return props.status === '提出済み' ? '提出済み' : '詳細を見る'
-})
-
-const buttonClass = computed(() => {
-  if (props.status === '提出済み') {
-    return 'bg-gray-300 text-gray-700 cursor-not-allowed'
-  }
-  return 'bg-green-500 hover:bg-green-600 text-white'
-})
-
-function handleButtonClick() {
-  if (props.status !== '提出済み') {
-    router.push({ name: 'AssignmentDetails', params: { id: props.id } })
-  }
+// 関数名をより明確に変更
+function handleDetailsClick() {
+  router.push({ name: 'AssignmentDetails', params: { id: props.id } })
 }
 </script>
