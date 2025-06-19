@@ -34,8 +34,11 @@ class Login(APIView):
 
     def post(self, request):
         data = request.data
-        university_id = data.get('university_id')
+        university_id_from_request = data.get('university_id')
         password = data.get('password')
+
+        # 大文字の学籍番号を使用するために変換
+        university_id = university_id_from_request.upper() if university_id_from_request else None
 
         if not university_id or not password:
             return Response({
@@ -45,7 +48,6 @@ class Login(APIView):
 
         # LDAP認証を行う (ここでは仮の認証成功としています)
         # ldap_authenticated = authenticate_with_ldap(university_id, password)
-        # from accounts.ldap_auth import authenticate_with_ldap # 必要に応じてインポート
         ldap_authenticated = True
 
         if ldap_authenticated:
@@ -58,8 +60,8 @@ class Login(APIView):
                 # Djangoの認証システムにログインさせる
                 login(request, user)
 
-                # Moodleのスクレイピングを実行
-                scrape_moodle(user, password)  
+                # Moodleの情報をスクレイピングする関数を呼び出す
+                scrape_moodle(user, password)
 
                 return Response({
                     'success': True,
@@ -75,14 +77,14 @@ class Login(APIView):
             except Exception as e:
                 return Response({
                     'success': False,
-                    'message': f'サーバーエラーが発生しました。エラー内容: {str(e)}'
+                    'message': f'サーバーエラーが発生しました。'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response({
                 'success': False,
                 'message': '学籍番号またはパスワードが正しくありません。'
             }, status=status.HTTP_401_UNAUTHORIZED)
-
+        
     def get(self, request):
         content = {
             'message': 'Login endpoint. Please POST university_id and password.'
