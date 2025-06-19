@@ -1,76 +1,85 @@
 <template>
-  <div class="AllAssignments-page">
-    <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold text-gray-800">課題一覧</h1>
+  <div class="all-assignments-page">
+    <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
+      
+      <h2 class="text-2xl font-semibold text-gray-700">課題一覧</h2>
+
       <div class="flex items-center gap-4">
         <input
           v-model="searchQuery"
           type="text"
           placeholder="キーワード検索"
-          class="border rounded px-2 py-1 text-sm"
+          class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-green-500 focus:border-green-500"
         />
-        <label class="flex items-center gap-1 text-sm text-gray-700">
-          <input type="checkbox" v-model="filterUnsubmitted" />
+        <label class="flex items-center gap-2 text-sm text-gray-700 select-none">
+          <input type="checkbox" v-model="filterUnsubmitted" class="rounded text-green-600 focus:ring-green-500" />
           未提出のみ表示
         </label>
       </div>
     </div>
 
-    <div v-for="task in filteredAssignments" :key="task.id" class="bg-white rounded-md shadow p-4 border border-gray-200 mb-4">
-      <h2 class="text-lg font-semibold text-gray-800">{{ task.title }}</h2>
-      <p class="text-sm text-gray-600 mt-1">提出期限：{{ task.dueDate }}</p>
-      <p class="text-sm mt-1 text-gray-600">
-        ステータス：
-        <span :class="task.status === '提出済み' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'">
-          {{ task.status }}
-        </span>
-      </p>
-      <p class="text-sm text-gray-600 mt-1">内容：{{ task.description }}</p>
+    <div v-if="isLoading" class="text-center py-12">
+      <p class="text-gray-500">課題を読み込んでいます...</p>
+    </div>
 
-      <div class="mt-3">
-        <RouterLink
-          :to="`/assignment/${task.id}`"
-          class="inline-block bg-green-700 text-white text-sm px-4 py-1.5 rounded hover:bg-green-800"
-        >
-          詳細を見る
-        </RouterLink>
-      </div>
+    <div v-else-if="error" class="text-center py-12 text-red-600 bg-red-50 p-4 rounded-lg">
+      <p>{{ error }}</p>
+    </div>
+
+    <div v-else>
+      <AssignmentList :assignments="filteredAssignments" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+// このセクションのコードは変更ありません
+import { ref, computed, onMounted } from 'vue'
+import apiClient from '@/api/axios' 
+import AssignmentList from '@/components/assignment/AssignmentList.vue'
 
+const assignments = ref([])
+const isLoading = ref(true)
+const error = ref(null)
 const searchQuery = ref('')
 const filterUnsubmitted = ref(false)
 
-const allAssignments = {
-  '1': { id: 1, title: '情報工学実験A', dueDate: '2025年6月10日', status: '未提出', description: 'レポートを提出してください。' },
-  '2': { id: 2, title: '卒業論文テーマ提出', dueDate: '2025年6月15日', status: '未提出', description: '概要を提出してください。' },
-  '3': { id: 3, title: '線形代数レポート', dueDate: '2025年5月28日', status: '提出済み', description: '問題を解いて提出済みです。' }
+const fetchAssignments = async () => {
+  isLoading.value = true
+  error.value = null
+  try {
+    const response = await apiClient.get('/assignments/')
+    assignments.value = response.data
+  } catch (err) {
+    console.error('課題の取得に失敗しました:', err)
+    error.value = '課題の取得に失敗しました。ページを再読み込みしてください。'
+  } finally {
+    isLoading.value = false
+  }
 }
 
-function parseJapaneseDate(str) {
-  const match = str.match(/(\d{4})年?(\d{1,2})月(\d{1,2})日?/)
-  if (!match) return new Date(NaN)
-  const [, y, m, d] = match
-  return new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`)
-}
-
-const sortedAssignments = computed(() =>
-  Object.values(allAssignments).sort((a, b) =>
-    parseJapaneseDate(a.dueDate) - parseJapaneseDate(b.dueDate)
-  )
-)
+onMounted(() => {
+  fetchAssignments()
+})
 
 const filteredAssignments = computed(() => {
-  return sortedAssignments.value.filter(task => {
-    const matchesSearch =
-      task.title.includes(searchQuery.value) ||
-      task.description.includes(searchQuery.value)
-    const matchesStatus = filterUnsubmitted.value ? task.status === '未提出' : true
+  if (!assignments.value) return []
+
+  let filtered = assignments.value.filter(assignment => {
+    const matchesSearch = assignment.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchesStatus = filterUnsubmitted.value ? !assignment.is_submitted : true
     return matchesSearch && matchesStatus
   })
+
+  // 提出期限でソート (新しい順)
+  filtered.sort((a, b) => {
+    if (a.is_submitted && !b.is_submitted) return 1
+    if (!a.is_submitted && b.is_submitted) return -1
+    if (!a.due_date) return 1
+    if (!b.due_date) return -1
+    return new Date(b.due_date) - new Date(a.due_date)
+  })
+
+  return filtered
 })
 </script>

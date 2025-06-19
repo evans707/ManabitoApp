@@ -65,6 +65,7 @@ const topThreeAssignments = computed(() => {
           :title="assignment.title"
           :due-date="assignment.due_date"
           :status="assignment.is_submitted ? '提出済み' : '未提出'"
+          :url="assignment.url"
         />
       </div>
       <div v-else class="text-center py-10">
