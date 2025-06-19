@@ -16,7 +16,7 @@ from rest_framework.permissions import AllowAny
 
 # local
 from accounts.models import User
-from scraping.services import scrape_moodle
+from scraping.services import scrape_moodle, scrape_webclass
 from scraping.serializers import AssignmentSerializer
 from scraping.models import Assignment
 
@@ -58,7 +58,8 @@ class Login(APIView):
                 # Djangoの認証システムにログインさせる
                 login(request, user)
 
-                # Moodleのスクレイピングを実行
+                # スクレイピングを実行
+                scrape_webclass(user, password)
                 scrape_moodle(user, password)  
 
                 return Response({
