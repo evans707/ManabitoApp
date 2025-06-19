@@ -100,6 +100,8 @@ def scrape_webclass(user: User, password: str):
             assignments_data = scraper.scrape_all_assignments()
             if not assignments_data:
                 logger.warning(f"ユーザー'{webclass_username}'のWebClass課題をスクレイピングしましたが、取得結果は0件でした。")
+
+            logger.debug(f"取得した課題データ: {assignments_data}")
             
             # データベースに保存
             for item in assignments_data:
