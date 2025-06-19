@@ -17,6 +17,9 @@ coverage
 /cypress/videos/
 /cypress/screenshots/
 
+# vite
+.vite
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
