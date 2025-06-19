@@ -23,13 +23,16 @@ class WebClassScraper:
     """
     東京電機大学のWebClassから課題情報をスクレイピングするクラス。
     ダッシュボードから全コースの情報を取得し、各コースページに遷移して
-    課題提出先のURLを詳細に取得する。（最終完成版）
+    課題提出先のURLを詳細に取得する。
     """
 
-    def __init__(self, username, password, logger, headless=True):
+    DASHBOARD_HREF = "/webclass/ip_mods.php/plugin/score_summary_table/dashboard"
+    BASE_DOMAIN = "https://els.sa.dendai.ac.jp"
+
+    def __init__(self, username, password, webclass_url, logger, headless=True):
         self.username = username
         self.password = password
-        self.login_url = ''
+        self.login_url = webclass_url
         self.home_url = ''
         self.logger = logger
         options = webdriver.ChromeOptions()
