@@ -26,13 +26,11 @@ class WebClassScraper:
     課題提出先のURLを詳細に取得する。（最終完成版）
     """
 
-    BASE_DOMAIN = "https://els.sa.dendai.ac.jp"
-    LOGIN_URL = f"{BASE_DOMAIN}/webclass/login.php"
-    DASHBOARD_HREF = "/webclass/ip_mods.php/plugin/score_summary_table/dashboard"
-
     def __init__(self, username, password, logger, headless=True):
         self.username = username
         self.password = password
+        self.login_url = ''
+        self.home_url = ''
         self.logger = logger
         options = webdriver.ChromeOptions()
         if headless:
@@ -56,8 +54,8 @@ class WebClassScraper:
         self.logger.info("ブラウザを終了しました。")
 
     def login(self):
-        self.logger.info(f"ログインページ ({self.LOGIN_URL}) にアクセスしています...")
-        self.driver.get(self.LOGIN_URL)
+        self.logger.info(f"ログインページ ({self.login_url}) にアクセスしています...")
+        self.driver.get(self.login_url)
         try:
             self.wait.until(EC.presence_of_element_located((By.ID, "username"))).send_keys(self.username)
             self.driver.find_element(By.ID, "password").send_keys(self.password)
@@ -191,8 +189,7 @@ class WebClassScraper:
         return text.strip()
 
     def _find_link_on_page(self, soup, assignment_name):
-        """★★★ 改善されたマッチングロジック ★★★
-        ページのHTMLから、課題名に最も一致するリンクのURLを探します。"""
+        """ ページのHTMLから、課題名に最も一致するリンクのURLを探します。"""
         # ダッシュボードの教材名を正規化
         norm_assignment_name = self._normalize_text(assignment_name)
         
