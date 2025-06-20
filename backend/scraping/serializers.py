@@ -5,5 +5,5 @@ from .models import Assignment
 class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
-        fields = ['id', 'user', 'course', 'title', 'content', 'url', 'due_date']
+        fields = ['id', 'user', 'course', 'title', 'content', 'url', 'due_date', 'is_submitted']
         read_only_fields = ['id', 'user']

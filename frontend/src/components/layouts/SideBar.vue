@@ -15,7 +15,7 @@
     <nav class="flex-grow px-2 space-y-1">
       <SidebarItem to="/" label="ホーム" :iconSvg="homeIconSvg" />
       <SidebarItem to="/calendar" label="カレンダー" :iconSvg="calendarIconSvg" />
-      <SidebarItem to="/upcoming-assignments" label="直近の課題" :iconSvg="clockIconSvg" />
+      <!-- <SidebarItem to="/upcoming-assignments" label="直近の課題" :iconSvg="clockIconSvg" /> -->
       <SidebarItem to="/all-assignments" label="すべての課題" :iconSvg="folderIconSvg" />
     </nav>
 
