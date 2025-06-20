@@ -57,14 +57,15 @@ const topThreeAssignments = computed(() => {
     </div>
 
     <div v-else>
-      <div v-if="assignments.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-if="topThreeAssignments.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AssignmentCard
           v-for="assignment in topThreeAssignments"
           :key="assignment.id"
           :id="assignment.id"
           :title="assignment.title"
           :due-date="assignment.due_date"
-          :status="assignment.status"
+          :status="assignment.is_submitted ? '提出済み' : '未提出'"
+          :url="assignment.url"
         />
       </div>
       <div v-else class="text-center py-10">
@@ -74,7 +75,7 @@ const topThreeAssignments = computed(() => {
 
     <div class="mt-8">
       <Card>
-        <Calendar />
+        <Calendar :assignments="assignments" /> 
       </Card>
     </div>
   </div>
