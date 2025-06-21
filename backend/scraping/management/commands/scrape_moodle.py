@@ -6,7 +6,7 @@ from django.utils.timezone import make_aware
 from scraping.scraper_moodle import MoodleScraper
 
 # Djangoのモデルとプロジェクト設定をインポート
-from scraping.models import Assignment
+from scraping.models import Assignment, Course
 from accounts.models import User
 
 # .envファイルをロード
@@ -46,29 +46,45 @@ class Command(BaseCommand):
 
         try:
             with MoodleScraper(moodle_username, moodle_password, moodle_url, logger) as scraper:
+                # ログイン処理
                 if not scraper.login():
+                    logger.warning(f"ユーザー'{moodle_username}'のMoodleへのログインに失敗しました。")
                     raise ConnectionError("Moodleへのログインに失敗しました。ユーザー名またはパスワードが間違っている可能性があります。")
+                logger.info(f"ユーザー'{moodle_username}'のログイン成功。課題の取得を開始します。")
+
+                # 課題データの取得
                 assignments_data = scraper.scrape_all_assignments()
-
                 if not assignments_data:
-                    logger.info(f'ユーザー "{moodle_username}" の課題をスクレイピングしましたが、取得結果は0件でした。')
-                    self.stdout.write(self.style.WARNING('取得できた課題はありませんでした。'))
-                    return
+                    logger.warning(f"ユーザー'{moodle_username}'の課題をスクレイピングしましたが、取得結果は0件でした。")
 
-                # 取得した課題をデータベースに保存
                 saved_count = 0
                 updated_count = 0
-                for item in assignments_data: 
-                                    
-                    # update_or_createでデータの登録・更新を自動化
+                
+                # データベースに保存
+                for item in assignments_data:
+                    url = item.get('url')
+                    course_title = item.get('course', '不明なコース')
+                    
+                    # URLがない場合はスキップ（キーとなるデータのため）
+                    if not url:
+                        logger.warning(f"URLが含まれていないため、課題データをスキップしました: {item}")
+                        continue
+
+                    # Courseを取得または作成
+                    course, _ = Course.objects.get_or_create(
+                        user=user,
+                        title=course_title
+                    )
+
                     obj, created = Assignment.objects.update_or_create(
                         user=user,
-                        url=item['url'],
+                        url=url,
                         defaults={
-                            'title': item['title'],
-                            'content': item['content'],
-                            'due_date': item['due_date'],
-                            'is_submitted': item['is_submitted']
+                            'course': course,
+                            'title': item.get('title', 'タイトルなし'),
+                            'content': item.get('content'), # contentはnull許容なのでデフォルト値なしでもOK
+                            'due_date': item.get('due_date'),
+                            'is_submitted': item.get('is_submitted', False)
                         }
                     )
                     if created:

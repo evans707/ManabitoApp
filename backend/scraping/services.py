@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from .scraper_moodle import MoodleScraper
 from .scraper_webclass import WebClassScraper
 from .scraper_webclass import WebClassScraper
-from .models import Assignment
+from .models import Assignment, Course
 from accounts.models import User
 
 load_dotenv()
@@ -43,16 +43,29 @@ def scrape_moodle(user: User, password: str):
 
             # データベースに保存
             for item in assignments_data:
-                due_date_aware = item.get('due_date')
+                url = item.get('url')
+                course_title = item.get('course', '不明なコース')
                 
+                # URLがない場合はスキップ（キーとなるデータのため）
+                if not url:
+                    logger.warning(f"URLが含まれていないため、課題データをスキップしました: {item}")
+                    continue
+
+                # Courseを取得または作成
+                course, _ = Course.objects.get_or_create(
+                    user=user,
+                    title=course_title
+                )
+
                 obj, created = Assignment.objects.update_or_create(
                     user=user,
-                    url=item['url'],
+                    url=url,
                     defaults={
-                        'title': item['title'],
-                        'content': item['content'],
-                        'due_date': due_date_aware,
-                        'is_submitted': item['is_submitted']
+                        'course': course,
+                        'title': item.get('title', 'タイトルなし'),
+                        'content': item.get('content'), # contentはnull許容なのでデフォルト値なしでもOK
+                        'due_date': item.get('due_date'),
+                        'is_submitted': item.get('is_submitted', False)
                     }
                 )
                 if created:
