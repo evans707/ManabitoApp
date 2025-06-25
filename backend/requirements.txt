@@ -17,6 +17,7 @@ django-cors-headers==4.7.0
 django-environ==0.12.0
 django-rest-framework==0.1.0
 djangorestframework==3.16.0
+gunicorn==23.0.0
 h11==0.16.0
 idna==3.10
 iniconfig==2.1.0
@@ -40,9 +41,7 @@ soupsieve==2.7
 sqlparse==0.5.3
 trio==0.30.0
 trio-websocket==0.12.2
-typing_extensions==4.14.0
 tzdata==2025.2
-urllib3==2.4.0
 vine==5.1.0
 wcwidth==0.2.13
 webdriver-manager==4.0.2
