@@ -7,8 +7,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common.exceptions import (NoSuchElementException,
-                                        TimeoutException)
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -26,12 +25,15 @@ class WebClassScraper:
     課題提出先のURLを詳細に取得する。（最終完成版）
     """
 
-    def __init__(self, username, password, logger, headless=True):
+    DASHBOARD_HREF = "/webclass/ip_mods.php/plugin/score_summary_table/dashboard"
+    BASE_DOMAIN = "https://els.sa.dendai.ac.jp"
+
+    def __init__(self, username, password, login_url, logger, headless=True): # login_url を引数に追加
         self.username = username
         self.password = password
-        self.login_url = ''
+        self.login_url = login_url  # 受け取ったlogin_urlをセット
         self.home_url = ''
-        self.logger = logger
+        self.logger = logger        # loggerも正しくセットされる
         options = webdriver.ChromeOptions()
         if headless:
             options.add_argument('--headless')
