@@ -16,7 +16,7 @@ function getCookie(name) {
 }
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8000/api' // APIのベースURLを設定
+  baseURL: '/api' // APIのベースURLを設定
 });
 
 apiClient.defaults.withCredentials = true;
