@@ -23,10 +23,13 @@ class WebClassScraper:
     課題提出先のURLを詳細に取得する。（最終完成版）
     """
 
-    def __init__(self, username, password, logger, headless=True):
+    DASHBOARD_HREF = "/webclass/ip_mods.php/plugin/score_summary_table/dashboard"
+    BASE_DOMAIN = "https://els.sa.dendai.ac.jp"
+
+    def __init__(self, username, password, login_url, logger, headless=True):
         self.username = username
         self.password = password
-        self.login_url = ''
+        self.login_url = login_url
         self.home_url = ''
         self.logger = logger
         options = webdriver.ChromeOptions()
