@@ -31,12 +31,6 @@ const topThreeAssignments = computed(() => {
   const now = new Date()
 
   return assignments.value
-    .filter(assignment => {
-      if (!assignment.due_date) {
-        return false
-      }
-      return new Date(assignment.due_date) > now
-    })
     .sort((a, b) => {
       return new Date(a.due_date) - new Date(b.due_date)
     })
