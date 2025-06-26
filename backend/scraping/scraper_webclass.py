@@ -15,24 +15,21 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
-from datetime import datetime
-from zoneinfo import ZoneInfo 
-
 
 class WebClassScraper:
     """
     東京電機大学のWebClassから課題情報をスクレイピングするクラス。
     ダッシュボードから全コースの情報を取得し、各コースページに遷移して
-    課題提出先のURLを詳細に取得する。
+    課題提出先のURLを詳細に取得する。（最終完成版）
     """
 
     DASHBOARD_HREF = "/webclass/ip_mods.php/plugin/score_summary_table/dashboard"
     BASE_DOMAIN = "https://els.sa.dendai.ac.jp"
 
-    def __init__(self, username, password, webclass_url, logger, headless=True):
+    def __init__(self, username, password, login_url, logger, headless=True):
         self.username = username
         self.password = password
-        self.login_url = webclass_url
+        self.login_url = login_url
         self.home_url = ''
         self.logger = logger
         options = webdriver.ChromeOptions()
@@ -71,30 +68,26 @@ class WebClassScraper:
             return False
 
     def scrape_all_assignments(self):
-        """
-        MoodleScraperと同様の形式（課題辞書のフラットなリスト）でデータを返します。
-        """
-        all_assignments_list = [] # appendではなくextendを使うため、変数名を変更
+        all_course_data = []
         if not self._navigate_to_dashboard():
-            return all_assignments_list
+            return all_course_data
 
         try:
             course_elements = self._get_course_elements_from_dashboard()
             self.logger.info(f"{len(course_elements)}個のコースが見つかりました。")
-
+            
             dashboard_window_handle = self.driver.current_window_handle
 
             for course_element in course_elements:
-                # _process_single_courseから返される「課題のリスト」をextendで結合
-                assignments_from_course = self._process_single_course(course_element, dashboard_window_handle)
-                if assignments_from_course:
-                    all_assignments_list.extend(assignments_from_course)
+                course_data = self._process_single_course(course_element, dashboard_window_handle)
+                if course_data:
+                    all_course_data.append(course_data)
 
         except Exception as e:
             self.logger.error(f"スクレイピング処理全体で予期せぬエラーが発生しました: {e}")
             self.logger.debug(traceback.format_exc())
-
-        return all_assignments_list
+        
+        return all_course_data
 
     def _navigate_to_dashboard(self):
         self.logger.info("ダッシュボードに移動しています...")
@@ -126,67 +119,41 @@ class WebClassScraper:
             return []
 
     def _process_single_course(self, course_element, dashboard_handle):
-        """
-        コース内の各課題をMoodleScraperの形式に整形し、リストとして返します。
-        """
-        formatted_assignments = []
         try:
             soup = BeautifulSoup(course_element.get_attribute('outerHTML'), "html.parser")
             course_link_tag = soup.select_one("a.font-semibold")
-            if not course_link_tag:
-                return None
-
+            if not course_link_tag: return None
+            
             course_name = course_link_tag.get_text(strip=True)
             course_url = urljoin(self.BASE_DOMAIN, course_link_tag['href'])
             self.logger.info(f"\n■コース '{course_name}' の処理を開始...")
 
+            assignments_list = []
             table = soup.find("table")
             if not table or "登録されている教材がありません" in soup.get_text():
                 self.logger.info(" -> 登録済みの教材はありません。")
-                return [] 
+                return {"course_name": course_name, "course_url": course_url, "assignments": "登録されている教材がありません"}
 
             headers = [th.get_text(strip=True) for th in table.select("thead th")]
-            if not headers:
-                headers = ["教材", "締切", "実施日", "最高点", "状態"]
+            if not headers: headers = ["教材", "締切", "実施日", "最高点", "状態"] 
 
             for row in table.select("tbody tr"):
                 cols = row.find_all("td")
-                if len(cols) < len(headers):
-                    continue
+                if len(cols) < len(headers): continue
 
                 row_data = {headers[i]: col.get_text(strip=True) for i, col in enumerate(cols)}
                 assignment_name = row_data.get("教材")
-
+                submission_url = None
                 if assignment_name and any(kw in assignment_name for kw in ["課題", "レポート", "小テスト", "アンケート"]):
                     self.logger.info(f" -> 課題「{assignment_name}」の提出先URLを検索...")
                     submission_url = self._get_submission_url_from_course_page(course_url, assignment_name, dashboard_handle)
+                row_data["課題提出先URL"] = submission_url
+                assignments_list.append(row_data)
 
-                    if submission_url:
-                        status_str = row_data.get("状態", "")
-                        is_submitted = "済" in status_str
-                        
-                        # ★★★ 締切文字列をdatetimeオブジェクトに変換 ★★★
-                        due_date_str = row_data.get("締切")
-                        due_date_obj = self._parse_webclass_due_date(due_date_str)
-
-                        assignment_dict = {
-                            'title': assignment_name,
-                            'url': submission_url,
-                            'course': course_name,
-                            'start_date': None,
-                            'due_date': due_date_obj, # 変換後のオブジェクトを格納
-                            'content': None,
-                            'is_submitted': is_submitted,
-                        }
-                        formatted_assignments.append(assignment_dict)
-                    else:
-                        self.logger.warning(f" -> 課題「{assignment_name}」のURLが取得できなかったため、スキップします。")
-
-            return formatted_assignments
-
+            return {"course_name": course_name, "course_url": course_url, "assignments": assignments_list}
+        
         except Exception as e:
             self.logger.warning(f"コース処理中にエラーが発生: {e}")
-            self.logger.debug(traceback.format_exc())
             return None
 
     def _get_submission_url_from_course_page(self, course_url, assignment_name, dashboard_handle):
@@ -195,7 +162,7 @@ class WebClassScraper:
             self.driver.switch_to.new_window('tab')
             self.driver.get(course_url)
             self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-
+            
             soup = BeautifulSoup(self.driver.page_source, "html.parser")
             url = self._find_link_on_page(soup, assignment_name)
 
@@ -215,85 +182,68 @@ class WebClassScraper:
 
     def _normalize_text(self, text):
         """比較のために、テキストから空白・改行・括弧書きを削除する正規化関数"""
+        # 括弧とその中身を削除（例: (締切...) や (link)）
         text = re.sub(r'[\(（].*?[\)）]', '', text)
+        # 空白、改行、タブを削除
         text = re.sub(r'\s+', '', text)
         return text.strip()
 
     def _find_link_on_page(self, soup, assignment_name):
         """ ページのHTMLから、課題名に最も一致するリンクのURLを探します。"""
+        # ダッシュボードの教材名を正規化
         norm_assignment_name = self._normalize_text(assignment_name)
+        
+        # 候補となるリンクを格納するリスト
         candidate_links = []
+
+        # ページ上の全てのリンクを探索
         all_links = soup.find_all("a", href=re.compile(r"/webclass/do_contents\.php\?.*"))
         for link in all_links:
             link_text = link.get_text(strip=True)
             if not link_text:
                 continue
+            
+            # ページ上のリンクテキストも正規化
             norm_link_text = self._normalize_text(link_text)
+            
+            # 正規化後のテキストが部分一致するかどうかで候補を判断
             if norm_link_text in norm_assignment_name or norm_assignment_name in norm_link_text:
                 candidate_links.append(link)
 
         if not candidate_links:
             return None
         
+        # 最も一致度が高い（正規化後の文字列が同じ）ものを最優先で返す
         for link in candidate_links:
             if self._normalize_text(link.get_text(strip=True)) == norm_assignment_name:
                 return urljoin(self.BASE_DOMAIN, link['href'])
         
+        # 上記で見つからなければ、候補の中で最も文字列が長いものを返す（より具体的な情報を持つと判断）
         best_match = max(candidate_links, key=lambda l: len(self._normalize_text(l.get_text(strip=True))))
         return urljoin(self.BASE_DOMAIN, best_match['href'])
 
-    def _parse_webclass_due_date(self, date_str: str, tz_str: str = "Asia/Tokyo"):
-        """
-        WebClassの締切日文字列 (例: "06/19 23:59") をdatetimeオブジェクトに変換します。
-        年が指定されていないため、現在の年を付与します。
-        """
-        if not date_str or not isinstance(date_str, str):
-            return None
-        
-        # "MM/DD HH:MM" 形式にマッチするか確認
-        match = re.match(r'(\d{1,2})/(\d{1,2})\s+(\d{1,2}):(\d{2})', date_str)
-        if not match:
-            return None
 
-        try:
-            current_year = datetime.now().year
-            month, day, hour, minute = map(int, match.groups())
-            
-            # タイムゾーンを考慮したdatetimeオブジェクトを作成
-            tz = ZoneInfo(tz_str)
-            return datetime(current_year, month, day, hour, minute, tzinfo=tz)
-        except (ValueError, TypeError):
-            self.logger.warning(f"日付文字列の変換に失敗しました: {date_str}")
-            return None
-
-
-def print_scraped_data(final_all_assignments_list):
-    """
-    フラットな課題リストを整形してコンソールに出力します。
-    """
-    if not final_all_assignments_list:
+def print_scraped_data(final_all_course_data):
+    if not final_all_course_data:
         print("\n課題データは取得されませんでした。")
         return
 
-    print(f"\n\n--- 全 {len(final_all_assignments_list)} 件のスクレイピングされた課題データ ---")
-    
-    courses = {}
-    for assignment in final_all_assignments_list:
-        course_name = assignment.get('course', '不明なコース')
-        if course_name not in courses:
-            courses[course_name] = []
-        courses[course_name].append(assignment)
-
-    for course_name, assignments in courses.items():
-        print(f"\n■コース: {course_name}")
-        for assign_idx, assign_data in enumerate(assignments):
-            print(f"  課題 {assign_idx + 1}:")
-            for key, value in assign_data.items():
-                # courseキーは既に見出しで表示しているのでスキップ
-                if key == 'course':
-                    continue
-                print(f"    - {key}: {value if value is not None else 'N/A'}")
+    print("\n\n--- 全てのスクレイピングされた課題データ ---")
+    for item in final_all_course_data:
+        print(f"\n■コース: {item['course_name']} (URL: {item.get('course_url', 'N/A')})")
+        assignments_data = item['assignments']
+        if isinstance(assignments_data, list):
+            if not assignments_data:
+                print("  - 課題情報は見つかりませんでした。")
+                continue
+            for assign_idx, assign_data in enumerate(assignments_data):
+                print(f"  課題 {assign_idx + 1}:")
+                for key, value in assign_data.items():
+                    print(f"    - {key}: {value if value else 'N/A'}")
+        else:
+            print(f"  - {assignments_data}")
     print("\n-----------------------------------------")
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -303,12 +253,10 @@ if __name__ == "__main__":
     logging.getLogger('webdriver_manager').setLevel(logging.WARNING)
 
     try:
-        # webclass_urlは直接指定
-        webclass_login_url = "https://els.sa.dendai.ac.jp/webclass/login.php"
         user_id = input("WebClassのユーザーIDを入力してください: ")
         password = getpass.getpass("パスワードを入力してください: ")
         
-        with WebClassScraper(user_id, password, webclass_login_url, logger, headless=True) as scraper:
+        with WebClassScraper(user_id, password, logger, headless=True) as scraper:
             if scraper.login():
                 all_data = scraper.scrape_all_assignments()
                 print_scraped_data(all_data)
