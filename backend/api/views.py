@@ -85,7 +85,7 @@ class Login(APIView):
 
                 return Response({
                     'success': False,
-                    'message': 'サーバーで内部エラーが発生しました。管理者に連絡してください。'
+                    'message': f'サーバーエラーが発生しました。'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response({
