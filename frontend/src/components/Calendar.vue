@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, defineProps } from 'vue'
+import { useCalendarSettingsStore } from '@/stores/settings'
 import { 
   startOfMonth, 
   endOfMonth, 
@@ -29,6 +30,15 @@ const currentMonth = ref(startOfMonth(today))
 const year = computed(() => format(currentMonth.value, 'yyyy'))
 const month = computed(() => format(currentMonth.value, 'M'))
 
+// 曜日配列を動的に
+const store = useCalendarSettingsStore()
+
+const weekDays = computed(() => {
+  return store.weekStartsOn === 1
+    ? ['月', '火', '水', '木', '金', '土', '日']
+    : ['日', '月', '火', '水', '木', '金', '土']
+})
+
 // カレンダーに表示する日付の配列を生成
 const calendarDays = computed(() => {
   // 表示月の最初と最後の日を取得
@@ -36,8 +46,8 @@ const calendarDays = computed(() => {
   const monthEnd = endOfMonth(currentMonth.value)
   
   // カレンダーの表示開始日（月の初日を含む週の日曜日）と終了日（月の最終日を含む週の土曜日）を取得
-  const startDate = startOfWeek(monthStart, { weekStartsOn: 0 }) // 週の始まりを日曜日に設定
-  const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 })
+  const startDate = startOfWeek(monthStart, { weekStartsOn: store.weekStartsOn }) // 週の始まりを動的に設定
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: store.weekStartsOn })
 
   // startDateからendDateまでのすべての日付の配列を生成
   return eachDayOfInterval({ start: startDate, end: endDate })
@@ -81,7 +91,7 @@ function getAssignmentsForDate(date) {
     </div>
 
     <div class="grid grid-cols-7 border-l border-b border-gray-200">
-      <div v-for="day in ['日', '月', '火', '水', '木', '金', '土']" :key="day" class="text-center text-sm font-medium text-gray-500 py-2 border-t border-r border-gray-200 bg-gray-50">{{ day }}</div>
+      <div v-for="day in weekDays" :key="day" class="text-center text-sm font-medium text-gray-500 py-2 border-t border-r border-gray-200 bg-gray-50">{{ day }}</div>
       
       <div 
         v-for="day in calendarDays" 
