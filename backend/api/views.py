@@ -19,6 +19,12 @@ from accounts.models import User
 from scraping.services import scrape_moodle, scrape_webclass
 from scraping.serializers import AssignmentSerializer
 from scraping.models import Assignment
+from scraping.task import run_all_scrapes_task
+
+import logging
+import traceback
+
+logger = logging.getLogger(__name__)
 
 
 # 認証されたユーザーに対してメッセージを返すサンプルAPI
@@ -60,9 +66,7 @@ class Login(APIView):
                 # Djangoの認証システムにログインさせる
                 login(request, user)
 
-                # スクレイピングを実行
-                scrape_webclass(user, password)
-                scrape_moodle(user, password)  
+                run_all_scrapes_task.delay(user.university_id, password)
 
                 return Response({
                     'success': True,
@@ -74,8 +78,11 @@ class Login(APIView):
                     'sessionid': request.session.session_key,
                     'message': 'ログインに成功しました'
                 }, status=status.HTTP_200_OK)
-            
+
             except Exception as e:
+                logger.error("Login APIで予期せぬエラーが発生しました。")
+                logger.error(traceback.format_exc())
+
                 return Response({
                     'success': False,
                     'message': f'サーバーエラーが発生しました。'
