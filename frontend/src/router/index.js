@@ -8,6 +8,7 @@ import AllAssignmentsView from '../views/AllAssignmentsView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import AssignmentDetailsView from '../views/AssignmentDetails.vue'
 import LoginView from '../views/LoginView.vue'
+import ProfileView from "@/views/ProfileView.vue";
 
 const routes = [
   {
@@ -55,7 +56,14 @@ const routes = [
     component: AssignmentDetailsView,
     props: true,
     meta: { requiresAuth: true }
-  }
+  },
+    {
+        path: '/profile',
+        name: 'Profile',
+        component: ProfileView,
+        meta: { requiresAuth: true }
+        
+    }
 ]
 
 const router = createRouter({
