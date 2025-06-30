@@ -28,19 +28,34 @@ onMounted(() => {
 })
 
 const topThreeAssignments = computed(() => {
+  if (!assignments.value) return []
+
   const now = new Date()
 
-  return assignments.value
-    .filter(assignment => {
-      if (!assignment.due_date) {
-        return false
-      }
-      return new Date(assignment.due_date) > now
-    })
+  const upcomingUnsubmitted = assignments.value
+    .filter(a => !a.is_submitted && a.due_date && new Date(a.due_date) >= now)
+    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date)) // 期限が近い順 (昇順)
+
+  if (upcomingUnsubmitted.length >= 3) {
+    return upcomingUnsubmitted.slice(0, 3)
+  }
+
+  const needed = 3 - upcomingUnsubmitted.length
+
+  const submitted = assignments.value
+    .filter(a => a.is_submitted)
     .sort((a, b) => {
-      return new Date(a.due_date) - new Date(b.due_date)
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return new Date(b.due_date) - new Date(a.due_date)
     })
-    .slice(0, 3)
+
+  const finalAssignments = [
+    ...upcomingUnsubmitted,
+    ...submitted.slice(0, needed)
+  ]
+
+  return finalAssignments
 })
 </script>
 
