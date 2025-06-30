@@ -1,40 +1,52 @@
 <template>
-  <div class="settings-page p-6">
-    <h1 class="text-2xl font-bold text-gray-800 mb-6">設定</h1>
+  <div class="settings-page">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-700">設定</h2>
 
-    <div>
-      <p class="mb-2 font-semibold text-gray-700">週の開始曜日:</p>
+    <Card>
+      <div class="space-y-6">
+        <div>
+          <h3 class="text-lg font-medium leading-6 text-gray-900">カレンダー設定</h3>
+          <p class="mt-1 text-sm text-gray-500">カレンダーの週の始まりを月曜日または日曜日に設定します。</p>
 
-      <div class="flex space-x-2">
-        <!-- 月曜始まり -->
-        <button
-          :class="[
-            'px-4 py-2 rounded-lg font-medium transition-colors',
-            weekStartsOn === 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'
-          ]"
-          @click="weekStartsOn = 1"
-        >
-          月曜日
-        </button>
+          <div class="mt-4">
+            <p class="mb-2 font-semibold text-gray-700">週の開始曜日:</p>
+            <div class="flex space-x-2">
+              <button
+                :class="[
+                  'px-4 py-2 rounded-lg font-medium transition-colors text-sm',
+                  weekStartsOn === 1
+                    ? 'bg-green-600 text-white shadow-sm'
+                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                ]"
+                @click="weekStartsOn = 1"
+              >
+                月曜日
+              </button>
 
-        <!-- 日曜始まり -->
-        <button
-          :class="[
-            'px-4 py-2 rounded-lg font-medium transition-colors',
-            weekStartsOn === 0 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'
-          ]"
-          @click="weekStartsOn = 0"
-        >
-          日曜日
-        </button>
-      </div>
-    </div>
+              <button
+                :class="[
+                  'px-4 py-2 rounded-lg font-medium transition-colors text-sm',
+                  weekStartsOn === 0
+                    ? 'bg-green-600 text-white shadow-sm'
+                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                ]"
+                @click="weekStartsOn = 0"
+              >
+                日曜日
+              </button>
+            </div>
+          </div>
+        </div>
+
+        </div>
+    </Card>
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
 import { useCalendarSettingsStore } from '@/stores/settings'
+import Card from '@/components/common/Card.vue' // Cardコンポーネントをインポート
 
 const settingsStore = useCalendarSettingsStore()
 const weekStartsOn = ref(settingsStore.weekStartsOn)
