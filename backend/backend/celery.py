@@ -1,7 +1,10 @@
 import os
 from celery import Celery
+import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+
+django.setup()
 
 app = Celery('backend')
 

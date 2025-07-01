@@ -33,8 +33,7 @@
 </template>
 
 <script setup>
-// このセクションのコードは変更ありません
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import apiClient from '@/api/axios' 
 import AssignmentList from '@/components/assignment/AssignmentList.vue'
 
@@ -62,6 +61,17 @@ onMounted(() => {
   fetchAssignments()
 })
 
+watch(
+  () => scrapingStore.completedMessages.length,
+  (newLength) => {
+    // 全てのタスクが完了したらデータを再取得
+    if (newLength >= scrapingStore.totalTasks) {
+      console.log('全スクレイピングが完了したため、課題データを再取得します。');
+      fetchAssignments();
+    }
+  }
+);
+
 const filteredAssignments = computed(() => {
   if (!assignments.value) return []
 
@@ -71,7 +81,7 @@ const filteredAssignments = computed(() => {
     return matchesSearch && matchesStatus
   })
 
-  // 提出期限でソート (新しい順)
+  // 提出期限でソート
   filtered.sort((a, b) => {
     if (a.is_submitted && !b.is_submitted) return 1
     if (!a.is_submitted && b.is_submitted) return -1
