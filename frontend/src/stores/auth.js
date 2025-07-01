@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useScrapingStore } from '@/stores/scrapingStore.js'
 import apiClient from '@/api/axios'
 import router from '@/router' // ルーターインスタンスをインポート
 
@@ -13,7 +14,9 @@ export const useAuthStore = defineStore('auth', {
         const response = await apiClient.post('/login/', credentials)
         const data = response.data
         if (data.success) {
-          this.isAuthenticated = true
+            const scrapingStore = useScrapingStore();
+            scrapingStore.connectWebSocket();
+            this.isAuthenticated = true
           this.user = data.user
           localStorage.setItem('isAuthenticated', 'true')
           localStorage.setItem('user', JSON.stringify(data.user))
@@ -37,6 +40,8 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Error during API logout call:', error)
       } finally {
+          const scrapingStore = useScrapingStore();
+        scrapingStore.disconnectWebSocket();
         this.isAuthenticated = false
         this.user = null
         localStorage.removeItem('isAuthenticated')

@@ -2,8 +2,44 @@ from celery import shared_task, group
 import logging
 from accounts.models import User
 from .services import scrape_moodle, scrape_webclass
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 logger = logging.getLogger(__name__)
+
+def send_status_update(user_pk, message):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f'scraping_status_user_{user_pk}',
+        {
+            'type': 'scraping.update',
+            'message': message
+        }
+    )
+
+
+@shared_task
+def scrape_webclass_task(user_pk, password):
+    """WebClassのスクレイピングを単体で実行し、完了を通知するタスク"""
+    user = User.objects.get(pk=user_pk)
+    try:
+        scrape_webclass(user, password)
+        send_status_update(user_pk, 'WebClassの課題取得が完了しました。')
+    except Exception as e:
+        logger.error(f"WebClassスクレイピング中にエラー: {e}", exc_info=True)
+        send_status_update(user_pk, 'WebClassの課題取得中にエラーが発生しました。')
+
+
+@shared_task
+def scrape_moodle_task(user_pk, password):
+    """Moodleのスクレイピングを単体で実行し、完了を通知するタスク"""
+    user = User.objects.get(pk=user_pk)
+    try:
+        scrape_moodle(user, password)
+        send_status_update(user_pk, 'Moodleの課題取得が完了しました。')
+    except Exception as e:
+        logger.error(f"Moodleスクレイピング中にエラー: {e}", exc_info=True)
+        send_status_update(user_pk, 'Moodleの課題取得中にエラーが発生しました。')
 
 
 @shared_task
@@ -22,31 +58,3 @@ def run_all_scrapes_task(user_pk, password):
     tasks_to_run.apply_async()
 
     logger.info(f"並列スクレイピングタスクをキューに登録しました for user_pk={user_pk}")
-
-
-@shared_task
-def scrape_webclass_task(user_pk, password):
-    """WebClassのスクレイピングを単体で実行するタスク"""
-    try:
-        user = User.objects.get(pk=user_pk)
-        logger.info(f"WebClassスクレイピングタスク開始 for {user.university_id}")
-        scrape_webclass(user, password)
-        logger.info(f"WebClassスクレイピングタスク完了 for {user.university_id}")
-    except User.DoesNotExist:
-        logger.error(f"タスク実行エラー: User with pk={user_pk} が見つかりません。")
-    except Exception as e:
-        logger.error(f"WebClassスクレイピング中に予期せぬエラー: {e}", exc_info=True)
-
-
-@shared_task
-def scrape_moodle_task(user_pk, password):
-    """Moodleのスクレイピングを単体で実行するタスク"""
-    try:
-        user = User.objects.get(pk=user_pk)
-        logger.info(f"Moodleスクレイピングタスク開始 for {user.university_id}")
-        scrape_moodle(user, password)
-        logger.info(f"Moodleスクレイピングタスク完了 for {user.university_id}")
-    except User.DoesNotExist:
-        logger.error(f"タスク実行エラー: User with pk={user_pk} が見つかりません。")
-    except Exception as e:
-        logger.error(f"Moodleスクレイピング中に予期せぬエラー: {e}", exc_info=True)

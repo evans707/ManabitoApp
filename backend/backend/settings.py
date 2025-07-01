@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'scraping.apps.ScrapingConfig',
     'accounts.apps.AccountsConfig',
     'rest_framework',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -175,6 +176,19 @@ STATIC_URL = 'static/'
 # Default primary key field type
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ASGIアプリケーションの設定
+ASGI_APPLICATION = 'backend.asgi.application'
+
+# チャンネルレイヤーの設定
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('redis', 6379)],
+        },
+    },
+}
 
 # ログ設定
 LOGGING = {
