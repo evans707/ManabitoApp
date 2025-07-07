@@ -2,7 +2,7 @@
 import AssignmentCard from '@/components/assignment/AssignmentCard.vue'
 import Calendar from '@/components/Calendar.vue'
 import Card from '@/components/common/Card.vue'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import apiClient from '@/api/axios'
 
 const assignments = ref([])
@@ -26,6 +26,17 @@ const fetchAssignments = async () => {
 onMounted(() => {
   fetchAssignments()
 })
+
+watch(
+  () => scrapingStore.completedMessages.length,
+  (newLength) => {
+    // 全てのタスクが完了したらデータを再取得
+    if (newLength >= scrapingStore.totalTasks) {
+      console.log('全スクレイピングが完了したため、課題データを再取得します。');
+      fetchAssignments();
+    }
+  }
+);
 
 const topThreeAssignments = computed(() => {
   if (!assignments.value) return []

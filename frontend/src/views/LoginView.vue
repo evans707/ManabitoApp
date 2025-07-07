@@ -1,6 +1,7 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
+  <P5Sketch />
+  <div class="flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md p-8 space-y-6 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg">
       <h2 class="text-3xl font-bold text-center text-gray-900">ログイン</h2>
       <form @submit.prevent="handleLogin" class="space-y-6">
         <div>
@@ -9,7 +10,7 @@
             id="university_id"
             v-model="university_id"
             name="university_id"
-            type="text"  ometries 
+            type="text"
             autocomplete="username"
             required
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
@@ -53,6 +54,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import P5Sketch from '@/components/P5Sketch.vue' // 作成したコンポーネントをインポート
 
 const authStore = useAuthStore();
 

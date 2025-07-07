@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'scraping.apps.ScrapingConfig',
     'accounts.apps.AccountsConfig',
     'rest_framework',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -62,8 +63,9 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
 ]
 
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
+SECURE_SSL_REDIRECT = os.getenv('DJANGO_SECURE_SSL_REDIRECT', 'False') == 'True'
+SESSION_COOKIE_SECURE = os.getenv('DJANGO_SESSION_COOKIE_SECURE', 'False') == 'True'
+CSRF_COOKIE_SECURE = os.getenv('DJANGO_CSRF_COOKIE_SECURE', 'False') == 'True'
 CSRF_COOKIE_PATH = '/'
 SESSION_COOKIE_PATH = '/'
 
@@ -174,6 +176,19 @@ STATIC_URL = 'static/'
 # Default primary key field type
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ASGIアプリケーションの設定
+ASGI_APPLICATION = 'backend.asgi.application'
+
+# チャンネルレイヤーの設定
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('redis', 6379)],
+        },
+    },
+}
 
 # ログ設定
 LOGGING = {

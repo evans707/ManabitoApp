@@ -93,28 +93,44 @@ def scrape_webclass(user: User, password: str):
             if not scraper.login():
                 logger.warning(f"ユーザー'{webclass_username}'のWebClassへのログインに失敗しました。")
                 raise ConnectionError("WebClassへのログインに失敗しました。ユーザー名またはパスワードが間違っている可能性があります。")
+
             logger.info(f"ユーザー'{webclass_username}'のログイン成功。課題の取得を開始します。")
 
             # 課題データの取得
-            # WebClassScraperにはまだscrape_all_assignmentsが実装されていないので注意
             assignments_data = scraper.scrape_all_assignments()
             if not assignments_data:
                 logger.warning(f"ユーザー'{webclass_username}'のWebClass課題をスクレイピングしましたが、取得結果は0件でした。")
             
             # データベースに保存
             for item in assignments_data:
-                due_date_aware = item.get('due_date')
-                
-                obj, created = Assignment.objects.update_or_create(
-                    user=user,
-                    url=item['url'],
-                    defaults={
-                        'title': item['title'],
-                        'content': item['content'],
-                        'due_date': due_date_aware,
-                        'is_submitted': item['is_submitted']
-                    }
-                )
+                item_title = item.get('title')
+                if not item_title:
+                    logger.warning(f"タイトルが空の課題データが見つかったため、スキップします。データ: {item}")
+                    continue
+
+                item_url = item.get('url')
+
+                defaults = {
+                    'title': item.get('title'),
+                    'content': item.get('content'),
+                    'due_date': item.get('due_date'),
+                    'is_submitted': item.get('is_submitted', False),
+                }
+
+                if item_url:
+                    obj, created = Assignment.objects.update_or_create(
+                        user=user,
+                        url=item_url,
+                        defaults=defaults
+                    )
+                else:
+                    logger.warning(f"URLがない課題を処理します: {defaults.get('title')}")
+                    obj, created = Assignment.objects.update_or_create(
+                        user=user,
+                        title=defaults.get('title'),
+                        defaults=defaults
+                    )
+
                 if created:
                     saved_count += 1
                 else:
@@ -124,7 +140,5 @@ def scrape_webclass(user: User, password: str):
         return (saved_count, updated_count)
     
     except Exception as e:
-        # 予期せぬ例外が発生した場合、詳細をログに出力
         logger.error(f"ユーザー'{webclass_username}'のWebClassスクレイピング中に予期せぬエラーが発生しました。", exc_info=True)
-        # エラーを再度発生させ、呼び出し元のビューに処理の失敗を伝える
         raise e
