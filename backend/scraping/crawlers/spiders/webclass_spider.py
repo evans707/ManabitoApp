@@ -77,7 +77,7 @@ class WebclassSpider(scrapy.Spider):
             await page.wait_for_selector("a[href*='logout']", timeout=20000)
             self.log("Login successful.", level=logging.INFO)
 
-            await page.pause()
+            # await page.pause()
 
             # --- 時間割表のコースを抽出 ---
             schedule_loc = page.locator('#schedule-table a, .schedule-list .course .list-group-item-heading')
@@ -145,7 +145,7 @@ class WebclassSpider(scrapy.Spider):
             await first_course_link.wait_for(timeout=5000)
             self.log("Dashboard iframe content loaded.", level=logging.INFO)
             
-            await page.pause()
+            # await page.pause()
 
             # --- コース情報を抽出 ---
             course_link_locators = iframe.locator('a.font-semibold[target="course"]')
