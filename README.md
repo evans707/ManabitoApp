@@ -10,5 +10,12 @@ html, css, JavaScript, python
    ``pip install -r requirements.txt``
 4. gitを使用してクローンし, djangoプロジェクトが実行できるか確認
 
-## 2. ドキュメント
+## 2. デプロイ
+サーバー上でpullし, 下記のコマンドを実行
+```
+docker compose build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+## 3. ドキュメント
 ･[Notionドキュメント](https://www.notion.so/Manabito-1fbd0b749bfd80d69943d859f6870257?pvs=4)
