@@ -37,7 +37,7 @@ class Assignment(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
 
     class Meta:
-        unique_together = ('user', 'url')
+        unique_together = ('user', 'title', 'url')
         ordering = ['due_date']
 
     def __str__(self):
