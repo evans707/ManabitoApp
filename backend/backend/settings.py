@@ -197,7 +197,7 @@ LOGGING = {
     
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{levelname} {asctime} {module} {process:d} {message}',
             'style': '{',
         },
         'simple': {
@@ -210,30 +210,46 @@ LOGGING = {
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+            'formatter': 'verbose', # フォーマッターをverboseに統一
         },
-        # 'file' ハンドラを RotatingFileHandler を使うように変更
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler', 
             'filename': os.path.join(BASE_DIR, 'django.log'),
             'formatter': 'verbose',
             'maxBytes': 1024 * 1024 * 5,  # 5MB
-            'backupCount': 5,            # 5世代までバックアップを保持
+            'backupCount': 5,
         }
     },
     
     'loggers': {
         'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'scraping': {
-            # このロガーは、上記で設定したローテーション機能付きの 'file' ハンドラを使用します
             'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,
         },
+        'scraping': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Scrapy本体のロガー設定
+        'scrapy': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Celeryのロガー設定
+        'celery': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        }
+    },
+
+    # 上記で指定されなかった全てのロガーに適用される
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
     },
 }

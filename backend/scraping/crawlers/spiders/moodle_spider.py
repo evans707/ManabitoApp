@@ -117,12 +117,12 @@ class MoodleSpider(scrapy.Spider):
                 'password': self.password,
                 'logintoken': logintoken,
             },
-            callback=self.parse_dashboard
+            callback=self.parse_home
         )
     
-    def parse_dashboard(self, response):
+    def parse_home(self, response):
         """
-        ログイン後のダッシュボードページを解析する。
+        ログイン後のホームページを解析する。
         """
         # ログイン成功をユーザーメニューの有無で判定
         if not response.css("div.usermenu"):
@@ -153,7 +153,11 @@ class MoodleSpider(scrapy.Spider):
         """
         コースページを解析し、課題とタブのリンクをたどる。
         """
-        self.logger.info(f"授業「{course_name}」を処理中")
+        active_tab_name = response.css("div.tabs-wrapper a.nav-link.active::attr(title)").get()
+        if active_tab_name:
+            self.logger.info(f"授業「{course_name}」: タブ「{active_tab_name}」を処理中")
+        else:
+            self.logger.info(f"授業「{course_name}」を処理中")
 
         # 課題(assign)と小テスト(quiz)のリンクを抽出
         for link in response.css("li.modtype_assign a.aalink, li.modtype_quiz a.aalink"):

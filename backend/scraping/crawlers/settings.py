@@ -15,13 +15,6 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'backend.settings'
 django.setup()
 # --- End of Django Integration Settings ---
 
-# --- Playwright Settings ---
-DOWNLOAD_HANDLERS = {
-    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-}
-TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-
 
 BOT_NAME = "crawlers"
 
@@ -40,11 +33,4 @@ ITEM_PIPELINES = {
    "scraping.crawlers.pipelines.DjangoPipeline": 300,
 }
 
-LOG_LEVEL = 'INFO'
-
-# # Scrapyが同時に処理するリクエストの最大数
-# CONCURRENT_REQUESTS = 4
-
-# # Playwrightが同時に開くページの最大数
-# PLAYWRIGHT_MAX_CONTEXTS = 2
-# PLAYWRIGHT_MAX_PAGES_PER_CONTEXT = 2
+TELNETCONSOLE_ENABLED = False
