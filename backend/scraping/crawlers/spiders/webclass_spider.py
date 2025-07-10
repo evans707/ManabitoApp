@@ -35,9 +35,14 @@ class WebclassSpider(scrapy.Spider):
             'headless': True
         },
         'PLAYWRIGHT_PROCESS_REQUEST_HEADERS': None,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 2,
-        'PLAYWRIGHT_MAX_CONTEXTS': 2,
-        'PLAYWRIGHT_MAX_PAGES_PER_CONTEXT': 2,
+        'AUTOTHROTTLE_ENABLED': True,
+        'AUTOTHROTTLE_START_DELAY': 0.1,
+        'AUTOTHROTTLE_MAX_DELAY': 10,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 3,
+        # 'CONCURRENT_REQUESTS_PER_DOMAIN': 3,
+        # 'PLAYWRIGHT_MAX_CONTEXTS': 3,
+        # 'PLAYWRIGHT_MAX_PAGES_PER_CONTEXT': 3,
+        'LOG_LEVEL': 'INFO',
     }
 
     def __init__(self, user_pk=None, password=None, login_url=None, *args, **kwargs):
