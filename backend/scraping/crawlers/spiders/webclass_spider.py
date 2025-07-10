@@ -32,10 +32,12 @@ class WebclassSpider(scrapy.Spider):
             "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
         },
         'PLAYWRIGHT_LAUNCH_OPTIONS': {
-            'headless': False
+            'headless': True
         },
         'PLAYWRIGHT_PROCESS_REQUEST_HEADERS': None,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 4,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 2,
+        'PLAYWRIGHT_MAX_CONTEXTS': 2,
+        'PLAYWRIGHT_MAX_PAGES_PER_CONTEXT': 2,
     }
 
     def __init__(self, user_pk=None, password=None, login_url=None, *args, **kwargs):
@@ -49,7 +51,7 @@ class WebclassSpider(scrapy.Spider):
         self.login_url = login_url
         self.log(f"{self.name} spider initialized for user_pk: {self.user_pk}", level=logging.INFO)
 
-    def start_requests(self):
+    async def start(self):
         """
         スパイダーの開始点。ログインページにアクセスする。
         """
@@ -78,7 +80,7 @@ class WebclassSpider(scrapy.Spider):
             await page.wait_for_selector("a[href*='logout']", timeout=20000)
             self.log("Login successful.", level=logging.INFO)
 
-            await page.pause()
+            # await page.pause()
 
             # --- 時間割表のコースを抽出 ---
             schedule_loc = page.locator('#schedule-table a, .schedule-list .course .list-group-item-heading')
@@ -136,7 +138,7 @@ class WebclassSpider(scrapy.Spider):
         try:
             await page.wait_for_load_state("networkidle")
 
-            await page.pause()
+            # await page.pause()
 
             await page.locator("main[role='main']").wait_for(timeout=10000)
             self.log("Dashboard loaded. Scraping courses...", level=logging.INFO)

@@ -25,9 +25,11 @@ def scrape_webclass_task(user_pk, password):
     try:
         scrape_webclass(user, password)
         send_status_update(user_pk, 'WebClassの課題取得が完了しました。')
+        return {'status': 'success', 'platform': 'WebClass'} 
     except Exception as e:
         logger.error(f"WebClassスクレイピング中にエラー: {e}", exc_info=True)
         send_status_update(user_pk, 'WebClassの課題取得中にエラーが発生しました。')
+        return {'status': 'failure', 'platform': 'WebClass', 'error': str(e)}
 
 
 @shared_task
@@ -37,9 +39,11 @@ def scrape_moodle_task(user_pk, password):
     try:
         scrape_moodle(user, password)
         send_status_update(user_pk, 'Moodleの課題取得が完了しました。')
+        return {'status': 'success', 'platform': 'Moodle'}
     except Exception as e:
         logger.error(f"Moodleスクレイピング中にエラー: {e}", exc_info=True)
         send_status_update(user_pk, 'Moodleの課題取得中にエラーが発生しました。')
+        return {'status': 'failure', 'platform': 'Moodle', 'error': str(e)}
 
 
 @shared_task
