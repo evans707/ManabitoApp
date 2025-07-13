@@ -26,7 +26,7 @@ export const useScrapingStore = defineStore('scraping', () => {
       return;
     }
 
-    const socketUrl = `ws://${window.location.host}/ws/scraping-status/`;
+    const socketUrl = `wss://${window.location.host}/ws/scraping-status/`;
     socket = new WebSocket(socketUrl);
 
     socket.onopen = () => {
