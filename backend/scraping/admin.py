@@ -3,7 +3,7 @@ from .models import Assignment, Course
 
 class AssignmentAdmin(admin.ModelAdmin):
     list_display = ('title', 'course', 'user', 'due_date', 'is_submitted')
-    list_filter = ('user', 'course')
+    list_filter = ('user', 'platform', 'course')
     search_fields = ('title', 'course__title')
     ordering = ('user', 'course', 'due_date')
 
