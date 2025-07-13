@@ -1,16 +1,40 @@
-from ldap3 import Server, Connection, ALL, NTLM
+from ldap3 import Server, Connection, ALL
+from ldap3.core.tls import Tls
+import ssl
+import os
+import dotenv
+import logging
 
-# ldap認証(仮)
+dotenv.load_dotenv()
+
+logger = logging.getLogger(__name__)
+
 def authenticate_with_ldap(university_id, password):
-    LDAP_SERVER = 'ldap://your.ldap.server'
-    LDAP_BASE_DN = 'dc=example,dc=edu'
-    USER_DN_TEMPLATE = f"uid={university_id},{LDAP_BASE_DN}"
+    LDAP_SERVER = os.getenv('LDAP_SERVER')
+    LDAP_BASE_DN = os.getenv('LDAP_BASE_DN')
 
-    server = Server(LDAP_SERVER, get_info=ALL)
+    # USER_DN_TEMPLATE = f'uid={university_id},{LDAP_BASE_DN}'
+
+    logger.info('LDAP Authentication Started.')
+    tls_config = Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLSv1_2)
+    server = Server(LDAP_SERVER, use_ssl=True, tls=tls_config, get_info=ALL)
+
     try:
-        conn = Connection(server, user=USER_DN_TEMPLATE, password=password)
-        if conn.bind():
+        conn = Connection(server, auto_bind=True)
+
+        search_filter = f'(uid={university_id})'
+
+        conn.search(search_base=LDAP_BASE_DN,
+                   search_filter=search_filter,
+                   attributes=['dn'])
+
+        if conn.entries:
+            user_dn = conn.entries[0].dn
+            auth_conn = Connection(server, user=user_dn, password=password)
+        if auth_conn.bind():
+            logger.info('LDAP Authentication successful.')
             return True
     except Exception as e:
-        print(f"LDAP error: {e}")
+        logger.error(f"LDAP error: {e}")
+
     return False

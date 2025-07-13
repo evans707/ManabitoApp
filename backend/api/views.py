@@ -16,13 +16,15 @@ from rest_framework.permissions import AllowAny
 
 # local
 from accounts.models import User
-from scraping.services import scrape_moodle, scrape_webclass
+from accounts.ldap_auth import authenticate_with_ldap
 from scraping.serializers import AssignmentSerializer
 from scraping.models import Assignment
 from scraping.task import run_all_scrapes_task
 
 import logging
 import traceback
+import os
+
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +54,11 @@ class Login(APIView):
                 'message': '学籍番号とパスワードが必要です'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # LDAP認証を行う (ここでは仮の認証成功としています)
-        # ldap_authenticated = authenticate_with_ldap(university_id, password)
-        ldap_authenticated = True
+        # LDAP認証
+        if not os.getenv('DEBUG'):
+            ldap_authenticated = authenticate_with_ldap(university_id, password)
+        else:
+            ldap_authenticated = True
 
         if ldap_authenticated:
             try:
