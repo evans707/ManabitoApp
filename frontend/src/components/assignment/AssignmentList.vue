@@ -9,6 +9,7 @@
         v-for="assignment in assignments" 
         :key="assignment.id"
         :assignment="assignment"
+        :course-name="assignment.course_name"
       />
     </div>
   </div>
@@ -17,8 +18,6 @@
 <script setup>
 import AssignmentListItem from './AssignmentListItem.vue'
 
-// --- Props定義 ---
-// 親コンポーネントから課題の配列データを受け取る
 defineProps({
   assignments: {
     type: Array,

@@ -1,6 +1,7 @@
 <template>
   <Card class="flex flex-col">
     <div class="flex-grow">
+      <p v-if="courseName" class="text-sm text-gray-600 mb-1">{{ courseName }}</p>
       <h3
         class="text-lg font-semibold mb-2"
         :class="status === '提出済み' ? 'text-gray-500' : 'text-green-700'"
@@ -23,9 +24,9 @@
         <button
           v-if="url && status !== '提出済み'"
           @click="openSubmissionPage"
-          class="inline-flex items-center gap-2 bg-green-500 text-white text-sm font-medium py-2 px-4 rounded-lg hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600"
+          class="inline-flex items-center gap-2 bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600"
         >
-          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M13.44 12.37a.75.75 0 10-1.06-1.06l-2.56 2.56V6.75a.75.75 0 00-1.5 0v7.12L5.62 9.69a.75.75 0 00-1.06 1.06l4.25 4.25a.75.75 0 001.06 0l4.25-4.25z" /><path d="M6.75 18a.75.75 0 000-1.5H13.25a.75.75 0 000 1.5H6.75z" /></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
           <span>提出</span>
         </button>
       </div>
@@ -35,7 +36,7 @@
         class="inline-flex items-center gap-2 bg-transparent text-gray-600 text-sm font-medium py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors"
       >
         <span>詳細を見る</span>
-        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" /></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" /></svg>
       </button>
     </div>
   </Card>
@@ -64,6 +65,10 @@ const props = defineProps({
     default: null
   },
   url: {
+    type: String,
+    default: null
+  },
+  courseName: {
     type: String,
     default: null
   }

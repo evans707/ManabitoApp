@@ -2,6 +2,7 @@ from celery import shared_task, group
 import logging
 from accounts.models import User
 from .services import scrape_moodle, scrape_webclass
+from .crawlers.spiders.webclass_spider import LogoutException
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
@@ -18,16 +19,23 @@ def send_status_update(user_pk, message):
     )
 
 
-@shared_task
-def scrape_webclass_task(user_pk, password):
+@shared_task(bind=True)
+def scrape_webclass_task(self, user_pk, password):
     """WebClassのスクレイピングを単体で実行し、完了を通知するタスク"""
     user = User.objects.get(pk=user_pk)
     try:
         scrape_webclass(user, password)
         send_status_update(user_pk, 'WebClassの課題取得が完了しました。')
+        return {'status': 'success', 'platform': 'WebClass'} 
+    except LogoutException as e:
+        logger.warning(f"WebClassでログアウトを検知。再試行します... (試行回数: {self.request.retries + 1}/{self.max_retries})")
+        send_status_update(user_pk, 'WebClassでログアウトが検知されたため、60秒後に再試行します...')
+        # countdown秒後に再試行、max_retries回まで
+        raise self.retry(exc=e, countdown=1, max_retries=3)
     except Exception as e:
         logger.error(f"WebClassスクレイピング中にエラー: {e}", exc_info=True)
         send_status_update(user_pk, 'WebClassの課題取得中にエラーが発生しました。')
+        return {'status': 'failure', 'platform': 'WebClass', 'error': str(e)}
 
 
 @shared_task
@@ -37,9 +45,11 @@ def scrape_moodle_task(user_pk, password):
     try:
         scrape_moodle(user, password)
         send_status_update(user_pk, 'Moodleの課題取得が完了しました。')
+        return {'status': 'success', 'platform': 'Moodle'}
     except Exception as e:
         logger.error(f"Moodleスクレイピング中にエラー: {e}", exc_info=True)
         send_status_update(user_pk, 'Moodleの課題取得中にエラーが発生しました。')
+        return {'status': 'failure', 'platform': 'Moodle', 'error': str(e)}
 
 
 @shared_task
