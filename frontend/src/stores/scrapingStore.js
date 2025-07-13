@@ -21,14 +21,11 @@ export const useScrapingStore = defineStore('scraping', () => {
 
   // --- Actions ---
   function connectWebSocket() {
-    // 既に接続がある場合は何もしない
     if (socket && socket.readyState === WebSocket.OPEN) {
       console.log("WebSocket is already connected.");
       return;
     }
 
-    // Nginxを経由するため、通常のWebサーバーと同じホスト・ポートを使用
-    // Django Channelsのrouting.pyで設定したパスを指定
     const socketUrl = `ws://${window.location.host}/ws/scraping-status/`;
     socket = new WebSocket(socketUrl);
 
@@ -62,7 +59,7 @@ export const useScrapingStore = defineStore('scraping', () => {
 
     socket.onclose = () => {
       console.log("WebSocket disconnected.");
-      isScraping.value = false; // 接続が切れたらローディングは終了
+      isScraping.value = false;
       socket = null;
     };
 

@@ -4,69 +4,82 @@ import Calendar from '@/components/Calendar.vue'
 import Card from '@/components/common/Card.vue'
 import { ref, onMounted, watch, computed } from 'vue'
 import apiClient from '@/api/axios'
+import { useScrapingStore } from '@/stores/scrapingStore'
 
 const assignments = ref([])
+const courses = ref([])
 const isLoading = ref(true)
 const error = ref(null)
+const scrapingStore = useScrapingStore()
 
+// --- APIからデータを取得する関数 ---
 const fetchAssignments = async () => {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
   try {
-    const response = await apiClient.get('/assignments/')
-    assignments.value = response.data
+    const [assignmentsResponse, coursesResponse] = await Promise.all([
+      apiClient.get('/assignments/'),
+      apiClient.get('/courses/')
+    ]);
+    assignments.value = assignmentsResponse.data;
+    courses.value = coursesResponse.data;
+
   } catch (err) {
-    console.error('課題の取得に失敗しました:', err)
-    error.value = '課題の取得に失敗しました。ページを再読み込みしてください。'
+    error.value = 'データの取得に失敗しました。ページを再読み込みしてください。';
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
+// --- ライフサイクルフック ---
 onMounted(() => {
-  fetchAssignments()
+  fetchAssignments();
 })
 
+// --- scrapingStore の状態を監視 ---
 watch(
   () => scrapingStore.completedMessages.length,
-  (newLength) => {
-    // 全てのタスクが完了したらデータを再取得
-    if (newLength >= scrapingStore.totalTasks) {
-      console.log('全スクレイピングが完了したため、課題データを再取得します。');
+  (newLength, oldLength) => {
+    if (newLength > oldLength && newLength >= scrapingStore.totalTasks) {
       fetchAssignments();
     }
   }
 );
 
+
+// --- ヘルパー関数 ---
+function getCourseName(courseId) {
+  if (courseId === null || !courses.value.length) {
+    return '（授業名なし）';
+  }
+  const course = courses.value.find(c => c.id === courseId);
+  return course ? course.title : '（不明な授業）';
+}
+
+
+// --- topThreeAssignments の computed プロパティ ---
 const topThreeAssignments = computed(() => {
-  if (!assignments.value) return []
-
-  const now = new Date()
-
+  if (!assignments.value) return [];
+  const now = new Date();
   const upcomingUnsubmitted = assignments.value
     .filter(a => !a.is_submitted && a.due_date && new Date(a.due_date) >= now)
-    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date)) // 期限が近い順 (昇順)
-
+    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
   if (upcomingUnsubmitted.length >= 3) {
-    return upcomingUnsubmitted.slice(0, 3)
+    return upcomingUnsubmitted.slice(0, 3);
   }
-
-  const needed = 3 - upcomingUnsubmitted.length
-
+  const needed = 3 - upcomingUnsubmitted.length;
   const submitted = assignments.value
     .filter(a => a.is_submitted)
     .sort((a, b) => {
       if (!a.due_date) return 1;
       if (!b.due_date) return -1;
       return new Date(b.due_date) - new Date(a.due_date)
-    })
-
+    });
   const finalAssignments = [
     ...upcomingUnsubmitted,
     ...submitted.slice(0, needed)
-  ]
-
-  return finalAssignments
+  ];
+  return finalAssignments;
 })
 </script>
 
@@ -92,16 +105,14 @@ const topThreeAssignments = computed(() => {
           :due-date="assignment.due_date"
           :status="assignment.is_submitted ? '提出済み' : '未提出'"
           :url="assignment.url"
+          :course-name="getCourseName(assignment.course)"
         />
-      </div>
-      <div v-else class="text-center py-10">
-        <p class="text-gray-500">現在、登録されている課題はありません。</p>
       </div>
     </div>
 
     <div class="mt-8">
       <Card>
-        <Calendar :assignments="assignments" /> 
+        <Calendar :assignments="assignments" />
       </Card>
     </div>
   </div>

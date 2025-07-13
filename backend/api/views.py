@@ -17,8 +17,8 @@ from rest_framework.permissions import AllowAny
 # local
 from accounts.models import User
 from accounts.ldap_auth import authenticate_with_ldap
-from scraping.serializers import AssignmentSerializer
-from scraping.models import Assignment
+from scraping.serializers import AssignmentSerializer, CourseSerializer
+from scraping.models import Assignment, Course
 from scraping.task import run_all_scrapes_task
 
 import logging
@@ -150,3 +150,11 @@ class AssignmentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+class CourseViewSet(viewsets.ModelViewSet):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)

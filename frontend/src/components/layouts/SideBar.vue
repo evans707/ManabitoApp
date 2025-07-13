@@ -1,5 +1,5 @@
 <template>
-  <aside class="bg-green-700 text-white w-20 hover:w-64 transition-all duration-300 ease-in-out flex flex-col space-y-1 py-4 overflow-hidden group">
+  <aside class="hidden md:flex bg-green-700 text-white w-20 hover:w-64 transition-all duration-300 ease-in-out flex-col space-y-1 py-4 overflow-hidden group">
     <RouterLink to="/profile" class="flex items-center space-x-3 px-4 py-3 hover:bg-green-600 rounded-lg mx-2 transition-colors">
       <span class="h-7 w-7 shrink-0">
         <IconAccount />
@@ -16,8 +16,8 @@
       <SidebarItem to="/calendar" label="カレンダー">
         <IconCalendar />
       </SidebarItem>
-      <SidebarItem to="/all-assignments" label="すべての課題">
-        <IconAssingment />
+      <SidebarItem to="/all-assignments" label="課題一覧">
+        <IconAssignment />
       </SidebarItem>
     </nav>
 
@@ -42,11 +42,10 @@ import { RouterLink } from 'vue-router'
 import SidebarItem from '../SideBarItem.vue'
 import { useAuthStore } from '@/stores/auth'
 
-// アイコンコンポーネントをインポート
 import IconAccount from '@/components/icons/IconAccount.vue'
 import IconHome from '@/components/icons/IconHome.vue'
 import IconCalendar from '@/components/icons/IconCalendar.vue'
-import IconAssingment from '@/components/icons/IconAssingment.vue'
+import IconAssignment from '@/components/icons/IconAssignment.vue'
 import IconSetting from '@/components/icons/IconSetting.vue'
 import IconLogout from '@/components/icons/IconLogout.vue'
 
