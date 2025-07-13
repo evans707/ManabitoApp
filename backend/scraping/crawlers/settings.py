@@ -1,7 +1,3 @@
-# Scrapy settings for crawlers project
-
-
-# --- Django Integration Settings ---
 import os
 import sys
 import django
@@ -13,7 +9,6 @@ sys.path.append(django_project_path)
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'backend.settings'
 django.setup()
-# --- End of Django Integration Settings ---
 
 
 BOT_NAME = "crawlers"

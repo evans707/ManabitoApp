@@ -1,11 +1,9 @@
-# backend/scraping/crawlers/pipelines.py
 from itemadapter import ItemAdapter
 from scraping.models import Assignment, Course
 from accounts.models import User
 
 class DjangoPipeline:
-    
-    # process_itemを async def として定義する
+
     async def process_item(self, item, spider):
         """
         Spiderから渡されたItemを、一件ずつ非同期でDBに保存する。
@@ -19,7 +17,6 @@ class DjangoPipeline:
             course, _ = await Course.objects.aget_or_create(
                 user=user,
                 title=adapter.get('course_name'),
-                # defaultsパラメータも指定できます
                 defaults={'day_of_week': None, 'period': None}
             )
 
