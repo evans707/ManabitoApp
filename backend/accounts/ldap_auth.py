@@ -11,13 +11,15 @@ logger = logging.getLogger(__name__)
 
 def authenticate_with_ldap(university_id, password):
     LDAP_SERVER = os.getenv('LDAP_SERVER')
-    LDAP_BASE_DN = os.getenv('LDAP_BASE_DN')
+    LDAP_BASE_DN = 'ou=People,dc=dendai,dc=ac,dc=jp'
 
     # USER_DN_TEMPLATE = f'uid={university_id},{LDAP_BASE_DN}'
 
     logger.info('LDAP Authentication Started.')
-    tls_config = Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLSv1_2)
-    server = Server(LDAP_SERVER, use_ssl=True, tls=tls_config, get_info=ALL)
+
+    # tls_config = Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLSv1_2)
+
+    server = Server(LDAP_SERVER, use_ssl=False, tls=None, get_info=ALL)
 
     try:
         conn = Connection(server, auto_bind=True)
