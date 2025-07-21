@@ -1,40 +1,42 @@
-from ldap3 import Server, Connection, ALL
-from ldap3.core.tls import Tls
+from ldap3 import Server, Connection, ALL, Tls
 import ssl
 import os
 import dotenv
 import logging
 
 dotenv.load_dotenv()
-
 logger = logging.getLogger(__name__)
+
 
 def authenticate_with_ldap(university_id, password):
     LDAP_SERVER = os.getenv('LDAP_SERVER')
-    LDAP_BASE_DN = os.getenv('LDAP_BASE_DN')
+    LDAP_BASE_DN = 'ou=People,dc=dendai,dc=ac,dc=jp'
 
-    # USER_DN_TEMPLATE = f'uid={university_id},{LDAP_BASE_DN}'
-
-    logger.info('LDAP Authentication Started.')
-    tls_config = Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLSv1_2)
-    server = Server(LDAP_SERVER, use_ssl=True, tls=tls_config, get_info=ALL)
+    server = Server(LDAP_SERVER, get_info=ALL)
 
     try:
-        conn = Connection(server, auto_bind=True)
+        with Connection(server) as conn:
+            search_filter = f'(uid={university_id})'
 
-        search_filter = f'(uid={university_id})'
+            found = conn.search(search_base=LDAP_BASE_DN,
+                                search_filter=search_filter,
+                                attributes=['uid'])
 
-        conn.search(search_base=LDAP_BASE_DN,
-                   search_filter=search_filter,
-                   attributes=['dn'])
+            if not found or not conn.entries:
+                logger.warning(f"LDAP search failed: User '{university_id}' not found.")
+                return False
 
-        if conn.entries:
-            user_dn = conn.entries[0].dn
-            auth_conn = Connection(server, user=user_dn, password=password)
-        if auth_conn.bind():
-            logger.info('LDAP Authentication successful.')
-            return True
+            user_dn = conn.entries[0].entry_dn
+            logger.info(f"Found user DN: {user_dn}")
+
+        with Connection(server, user=user_dn, password=password) as auth_conn:
+            if auth_conn.bound:
+                logger.info('LDAP Authentication successful.')
+                return True
+            else:
+                logger.warning(f"LDAP bind failed for user '{user_dn}'. Result: {auth_conn.result}")
+                return False
+
     except Exception as e:
-        logger.error(f"LDAP error: {e}")
-
-    return False
+        logger.error(f"An unexpected LDAP error occurred: {e}")
+        return False
