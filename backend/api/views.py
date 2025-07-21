@@ -55,12 +55,10 @@ class Login(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # LDAP認証
-        # if not os.getenv('DEBUG'):
-        #     ldap_authenticated = authenticate_with_ldap(university_id, password)
-        # else:
-        #     ldap_authenticated = True
-
-        ldap_authenticated = authenticate_with_ldap(university_id, password)
+        if not os.getenv('DEBUG', 'False') == 'True':
+            ldap_authenticated = authenticate_with_ldap(university_id, password)
+        else:
+            ldap_authenticated = True
 
         if ldap_authenticated:
             try:
