@@ -1,21 +1,12 @@
-## 1. 環境構築
-### 使用言語
-html, css, JavaScript, python
+# 課題情報一元管理Webサービス「マナビト」
 
-### Django
-1. Python 3.12.3をインストール\
-2. 下記のコマンドを実行し, 仮想環境を作成\
-   ``python -m venv venv``
-3. requirements.txtからpythonライブラリをインストール\
-   ``pip install -r requirements.txt``
-4. gitを使用してクローンし, djangoプロジェクトが実行できるか確認
+![manabito_icon](./image/manabito_icon.png)
 
-## 2. デプロイ
-サーバー上でpullし, 下記のコマンドを実行
-```
-docker compose build
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
+![manabito1](./image/manabito_slide_1.png)
 
-## 3. ドキュメント
-･[Notionドキュメント](https://www.notion.so/Manabito-1fbd0b749bfd80d69943d859f6870257?pvs=4)
+![manabito2](./image/manabito_slide_2.png)
+
+![manabito3](./image/manabito_slide_3.png)
+
+![manabito4](./image/manabito_slide_4.png)
+
